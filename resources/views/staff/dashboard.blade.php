@@ -313,6 +313,58 @@
         );
 
     });
+
+    // the location monitor script
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!navigator.geolocation) {
+            console.log('Geolocation is not supported by this browser');
+            return;
+        }
+        function updateStaffLocation() {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    fetch("{{ route('staff.location.update', [], false) }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            latitude: latitude,
+                            longitude: longitude,
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Staff location updated:', data);
+
+                    })
+                    .catch(error => {
+                        console.error('Location update failed:', error)
+                    });
+                },
+                function (error) {
+                    console.log('Unable to update staff location:', error.message);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+                );
+                
+
+        }
+        // get location immediately
+        updateStaffLocation();
+        // update location every 60 meters
+        setInterval(() => {
+            updateStaffLocation();
+        }, 60000);
+    });
 </script>
 
     @endif

@@ -13,11 +13,11 @@ class OfficeLocation extends Model
         'allowed_radius',
     ];
 
-    public function casts() {
-        return [
-            'latitude' => 'decimal:7',
-            'longitude' => 'decimal:7',
-            'allowed_radius' => 'integer',
+
+    protected $casts = [
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'allowed_radius' => 'integer',
         ];
-    }
+
 }

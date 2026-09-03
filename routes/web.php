@@ -6,7 +6,9 @@ use App\Http\Controllers\Admin\OfficeLocationController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\StaffController;
+use App\Mail\NearOfficeMail;
 use App\Models\Attendance;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -44,6 +46,7 @@ Route::middleware('auth')->group(function () {
     })->middleware('role:staff')->name('staff.dashboard');
 
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.check-in');
+    Route::post('staff/location', [AttendanceController::class, 'updateLocation'])->name('staff.location.update');
 
     // staff management routes
     Route::resource('/admin/staff', StaffController::class)->middleware('role:admin');
@@ -53,3 +56,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 });
+
+Route::get('/test-near-office-email', function () {
+    Mail::to('prosesprojestus0@gmail.com')
+        ->send(new NearOfficeMail('Test staff'));
+    return 'Near office email sent successfully.';
+});
+
+

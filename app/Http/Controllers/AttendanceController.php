@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\OfficeLocation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AttendanceController extends Controller
 {
@@ -31,14 +32,14 @@ class AttendanceController extends Controller
         }
 
         $today = Carbon::today();
-        $maxAccuracy = 100;
-        if ($accuracy > $maxAccuracy) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your location is not accurate enough.',
-                'accuracy' => round($accuracy, 2),
-            ], 422);
-        }
+        //$maxAccuracy = 100;
+        // if ($accuracy > $maxAccuracy) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Your location is not accurate enough.',
+        //         'accuracy' => round($accuracy, 2),
+        //     ], 422);
+        // }
         $existingAttendance = Attendance::where(
             'user_id',
             auth()->id()
@@ -90,6 +91,29 @@ class AttendanceController extends Controller
                 'status' => $attendance->status,
             ],
         ], 201);
+    }
+
+    // storing temporarily the location controllerer
+    public function updateLocation(Request $request) {
+        $data = $request->validate([
+            'latitude' => ['required', 'numeric'],
+            'longitude' => ['required', 'numeric'],
+        ]);
+        $userId = auth()->id();
+        Cache::put(
+            "staff_location:{$userId}",
+            [
+                'latitude' => $data['latitude'],
+                'longitude' => $data['longitude'],
+                'updated_at' => now()->toDateTimeString(),
+
+            ],
+            now()->addMinutes(5)
+        );
+        return response()->json([
+            'success' => true,
+            'message' => 'Location updated successfully.',
+        ]);
     }
 
 
