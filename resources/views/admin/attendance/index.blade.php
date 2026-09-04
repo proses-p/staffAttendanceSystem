@@ -12,46 +12,59 @@
     <title>Daily Attendance Report</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
-<body class="bg-gray-100 min-h-screen p-6">
+<body class="min-h-screen bg-slate-50 p-4 text-slate-900 sm:p-6 lg:p-10">
 
-    <div class="max-w-6xl mx-auto">
+    <div class="mx-auto max-w-6xl">
 
-        <div class="mb-6">
+        <header class="mb-8 flex flex-col gap-3 border-b border-slate-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
+                    <span class="h-2 w-2 rounded-full bg-orange-500"></span>
+                    Operations report
+                </p>
 
-            <h1 class="text-2xl font-bold text-gray-800">
-                Daily Attendance Report
-            </h1>
+                <h1 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                    Daily attendance
+                </h1>
 
-            <p class="text-gray-500 mt-1">
-                {{ $today->format('l, d F Y') }}
-            </p>
+                <p class="mt-2 text-sm text-slate-500">
+                    {{ $today->format('l, d F Y') }}
+                    <span class="mx-2 text-slate-300">/</span>
+                    A clear view of today's arrivals.
+                </p>
+            </div>
+            <span class="inline-flex w-fit items-center rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700">
+                {{ $staff->count() }} active staff
+            </span>
 
-        </div>
+        </header>
 
 
-        <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-            <table class="w-full">
+            <div class="overflow-x-auto">
+            <table class="min-w-[680px] w-full text-left">
 
-                <thead class="bg-gray-50">
+                <thead class="border-b border-slate-200 bg-slate-50/80">
 
-                    <tr>
+                    <tr class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
 
-                        <th class="text-left p-4">
+                        <th class="px-6 py-4">
                             Staff Name
                         </th>
 
-                        <th class="text-left p-4">
+                        <th class="px-6 py-4">
                             Email
                         </th>
 
-                        <th class="text-left p-4">
+                        <th class="px-6 py-4">
                             Check In
                         </th>
 
-                        <th class="text-left p-4">
+                        <th class="px-6 py-4">
                             Status
                         </th>
 
@@ -60,7 +73,7 @@
                 </thead>
 
 
-                <tbody>
+                <tbody class="divide-y divide-slate-100">
 
                     @forelse ($staff as $member)
 
@@ -68,17 +81,22 @@
                             $attendance = $member->attendances->first();
                         @endphp
 
-                        <tr class="border-t">
+                        <tr class="transition hover:bg-orange-50/40">
 
-                            <td class="p-4 font-medium">
-                                {{ $member->name }}
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-50 text-sm font-semibold text-orange-700">
+                                        {{ strtoupper(substr($member->name, 0, 1)) }}
+                                    </span>
+                                    <span class="font-semibold text-slate-900">{{ $member->name }}</span>
+                                </div>
                             </td>
 
-                            <td class="p-4">
+                            <td class="px-6 py-4 text-sm text-slate-600">
                                 {{ $member->email }}
                             </td>
 
-                            <td class="p-4">
+                            <td class="px-6 py-4 text-sm text-slate-600">
 
                                 @if ($attendance)
 
@@ -88,26 +106,26 @@
 
                                 @else
 
-                                    —
+                                    <span class="text-slate-300">Not recorded</span>
 
                                 @endif
 
                             </td>
 
 
-                            <td class="p-4">
+                            <td class="px-6 py-4">
 
                                 @if ($attendance)
 
-                                    <span class="px-3 py-1 rounded-full
-                                        bg-green-100 text-green-700">
+                                    <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                         Present
                                     </span>
 
                                 @else
 
-                                    <span class="px-3 py-1 rounded-full
-                                        bg-red-100 text-red-700">
+                                    <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                                         Not Signed In
                                     </span>
 
@@ -123,7 +141,7 @@
 
                             <td
                                 colspan="4"
-                                class="p-8 text-center text-gray-500"
+                                class="px-6 py-12 text-center text-sm text-slate-500"
                             >
                                 No active staff found.
                             </td>
@@ -135,6 +153,7 @@
                 </tbody>
 
             </table>
+            </div>
 
         </div>
 

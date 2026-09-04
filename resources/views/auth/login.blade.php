@@ -9,6 +9,7 @@
     <title>Login | Staff Attendance</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
 <body class="min-h-screen bg-gray-100 flex items-center justify-center px-4">

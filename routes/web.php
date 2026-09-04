@@ -3,7 +3,9 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AttendanceReportController;
 use App\Http\Controllers\Admin\OfficeLocationController;
+use App\Http\Controllers\Admin\StaffInvitationController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceSettingController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\StaffController;
 use App\Mail\NearOfficeMail;
@@ -26,6 +28,7 @@ Route::get('/', function () {
 // login routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.store');
+Route::match(['get', 'post'], '/staff/register/{token}', [StaffInvitationController::class, 'register'])->name('staff.register');
 
 Route::middleware('auth')->group(function () {
 
@@ -35,6 +38,11 @@ Route::middleware('auth')->group(function () {
     ])->middleware('role:admin')->name('admin.dashboard');
     Route::get('/admin/attendance', [AttendanceReportController::class, 'index'])->middleware('role:admin')->name('admin.attendance.index');
     Route::post('/admin/office-location', [OfficeLocationController::class, 'store'])->middleware('role:admin')->name('admin.office-location.store');
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/time-settings', [AttendanceSettingController::class, 'index'])->name('admin.time-settings.index');
+        Route::post('/admin/time-settings', [AttendanceSettingController::class, 'store'])->name('admin.time-settings.store');
+        Route::post('/admin/invitations', [StaffInvitationController::class, 'store'])->name('admin.invitations.store');
+    });
 
     // staff dashboard routes
     Route::get('/staff/dashboard', function () {

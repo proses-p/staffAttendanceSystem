@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,485 +10,773 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Daily Attendance Report</title>
+    <title>Admin Dashboard · Attendance</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
-<body class="bg-gray-100 min-h-screen p-6">
+<body class="min-h-screen bg-slate-50 text-slate-900">
 
-    <div class="max-w-6xl mx-auto">
+    <div class="min-h-screen flex flex-col lg:flex-row">
 
-        <div class="mb-6 flex items-center justify-between">
-            <div>
-            <h1 class="text-2xl font-bold text-gray-800">
-                Daily Attendance Report
-            </h1>
+        @include('components.admin-sidebar')
 
-            <p class="text-gray-500 mt-1">
-                {{ $today->format('l, d F Y') }}
-            </p>
-            </div>
+        <main class="flex-1 p-4 sm:p-6 lg:p-10">
 
+            <div class="mx-auto max-w-7xl">
 
-            <div class="flex gap-3">
-                <button
-                type="button"
-                onclick="openStaffModal()"
-                class="bg-blue-600 text-white px-4 py-2 rounded-lg"
-            >
-                + add staff
-            </button>
-                <button
-                    type="button"
-                    onclick="openLocationModal()"
-                    class="bg-gray-800 text-white px-5 py-2 rounded-lg"
-                >
-                    Save office location
-                </button>
-            </div>
+                <header class="mb-8 flex flex-col gap-5 border-b border-slate-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
 
-        </div>
+                    <div>
+                        <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">
+                            <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
+                            Operations overview
+                        </div>
 
+                        <h1 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                            Good morning, admin.
+                        </h1>
 
-        <div class="bg-white rounded-xl shadow overflow-hidden">
+                        <p class="mt-2 text-sm text-slate-500">
+                            {{ $today->format('l, d F Y') }}
+                            <span class="mx-2 text-slate-300">/</span>
+                            Your attendance overview at a glance.
+                        </p>
+                    </div>
 
-            <table class="w-full">
+                    <div class="flex flex-wrap gap-3">
 
-                <thead class="bg-gray-50">
-
-                    <tr>
-
-                        <th class="text-left p-4">
-                            Staff Name
-                        </th>
-
-                        <th class="text-left p-4">
-                            Email
-                        </th>
-
-                        <th class="text-left p-4">
-                            Check In
-                        </th>
-
-                        <th class="text-left p-4">
-                            Status
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                    @forelse ($staff as $member)
-
-                        @php
-                            $attendance = $member->attendances->first();
-                        @endphp
-
-                        <tr class="border-t">
-
-                            <td class="p-4 font-medium">
-                                {{ $member->name }}
-                            </td>
-
-                            <td class="p-4">
-                                {{ $member->email }}
-                            </td>
-
-                            <td class="p-4">
-
-                                @if ($attendance)
-
-                                    {{ \Carbon\Carbon::parse(
-                                        $attendance->check_in_time
-                                    )->format('h:i A') }}
-
-                                @else
-
-                                    —
-
-                                @endif
-
-                            </td>
-
-
-                            <td class="p-4">
-
-                                @if ($attendance)
-
-                                    <span class="px-3 py-1 rounded-full
-                                        bg-green-100 text-green-700">
-                                        Signed in
-                                    </span>
-
-                                @else
-
-                                    <span class="px-3 py-1 rounded-full
-                                        bg-red-100 text-red-700">
-                                        Not Signed In
-                                    </span>
-
-                                @endif
-
-                            </td>
-
-                        </tr>
-
-                    @empty
-
-                        <tr>
-
-                            <td
-                                colspan="4"
-                                class="p-8 text-center text-gray-500"
+                        {{-- Invite Staff --}}
+                        <button
+                            type="button"
+                            onclick="openStaffModal()"
+                            class="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                        >
+                            <svg
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
                             >
-                                No active staff found.
-                            </td>
+                                <path stroke-linecap="round" d="M12 5v14M5 12h14" />
+                            </svg>
 
-                        </tr>
+                            Invite staff
+                        </button>
 
-                    @endforelse
+                        {{-- Save Location --}}
+                        <button
+                            type="button"
+                            onclick="openLocationModal()"
+                            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                        >
+                            <svg
+                                class="h-4 w-4 text-slate-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="1.75"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M17.657 16.657L13.414 21a2 2 0 01-2.828 0l-4.243-4.343a8 8 0 1111.314 0z"
+                                />
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                            </svg>
 
-                </tbody>
+                            Save location
+                        </button>
 
-            </table>
+                    </div>
+                </header>
 
-        </div>
+
+                <div id="dashboardView">
+                    <x-admin-statistics />
+                </div>
+
+
+                <section
+                    id="usersView"
+                    class="hidden"
+                    aria-labelledby="usersHeading"
+                >
+
+                    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+                        <div>
+                            <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">
+                                <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
+                                Directory
+                            </div>
+
+                            <h2
+                                id="usersHeading"
+                                class="text-3xl font-semibold tracking-tight text-slate-950"
+                            >
+                                Users
+                            </h2>
+
+                            <p class="mt-2 text-sm text-slate-500">
+                                Manage your team directory from one place.
+                            </p>
+                        </div>
+
+                        <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                            {{ $staff->count() }} users
+                        </span>
+
+                    </div>
+
+
+                    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+                        <div class="overflow-x-auto">
+
+                            <table class="min-w-180 w-full text-left">
+
+                                <thead class="border-b border-slate-200 bg-slate-50/80">
+
+                                    <tr class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+
+                                        <th class="px-6 py-4">User</th>
+                                        <th class="px-6 py-4">Email</th>
+                                        <th class="px-6 py-4">Role</th>
+                                        <th class="px-6 py-4">Attendance status</th>
+                                        <th class="px-6 py-4 text-right">Actions</th>
+
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody class="divide-y divide-slate-100">
+
+                                    @forelse ($staff as $member)
+
+                                        @php
+                                            $todayAttendance = $member->attendances->first();
+                                        @endphp
+
+                                        <tr class="transition hover:bg-slate-50/70">
+
+                                            <td class="px-6 py-4">
+
+                                                <div class="flex items-center gap-3">
+
+                                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-sm font-semibold text-cyan-700">
+                                                        {{ strtoupper(substr($member->name, 0, 1)) }}
+                                                    </span>
+
+                                                    <div>
+
+                                                        <p class="text-sm font-semibold text-slate-900">
+                                                            {{ $member->name }}
+                                                        </p>
+
+                                                        <p class="mt-0.5 text-xs text-slate-400">
+                                                            Staff member
+                                                        </p>
+
+                                                    </div>
+
+                                                </div>
+
+                                            </td>
+
+
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                {{ $member->email }}
+                                            </td>
+
+
+                                            <td class="px-6 py-4">
+
+                                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-600">
+                                                    {{ $member->role }}
+                                                </span>
+
+                                            </td>
+
+
+                                            <td class="px-6 py-4">
+
+                                                @if ($todayAttendance)
+
+                                                    <div class="space-y-1">
+
+                                                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                                                            🟢 Signed In
+                                                        </span>
+
+                                                        <p class="text-xs text-slate-500">
+                                                            {{ $todayAttendance->check_in_time?->format('h:i A') ?? 'Time unavailable' }}
+                                                        </p>
+
+                                                    </div>
+
+                                                @else
+
+                                                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-rose-700">
+                                                        🔴 Not Signed In
+                                                    </span>
+
+                                                @endif
+
+                                            </td>
+
+
+                                            <td class="px-6 py-4">
+
+                                                <div class="flex justify-end gap-1">
+
+                                                    <button
+                                                        type="button"
+                                                        aria-label="View {{ $member->name }}"
+                                                        title="View"
+                                                        class="rounded-lg p-2 text-slate-400 transition hover:bg-cyan-50 hover:text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    >
+                                                        <svg
+                                                            class="h-5 w-5"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            stroke-width="1.75"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="M2.46 12S4.91 5 12 5s9.54 7 9.54 7S19.09 19 12 19s-9.54-7-9.54-7Z"
+                                                            />
+                                                            <circle cx="12" cy="12" r="3" />
+                                                        </svg>
+                                                    </button>
+
+
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Edit {{ $member->name }}"
+                                                        title="Edit"
+                                                        class="rounded-lg p-2 text-slate-400 transition hover:bg-amber-50 hover:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                                    >
+                                                        <svg
+                                                            class="h-5 w-5"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            stroke-width="1.75"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="m4 16-.5 4.5L8 20l11.5-11.5a2.12 2.12 0 0 1-3-3L5 17Z"
+                                                            />
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                d="m14.5 7.5 2 2"
+                                                            />
+                                                        </svg>
+                                                    </button>
+
+
+                                                    <button
+                                                        type="button"
+                                                        aria-label="Delete {{ $member->name }}"
+                                                        title="Delete"
+                                                        class="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                                                    >
+                                                        <svg
+                                                            class="h-5 w-5"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            stroke-width="1.75"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="M4 7h16m-10 4v5m4-5v5M9 7V4h6v3m-9 0 1 13h10l1-13"
+                                                            />
+                                                        </svg>
+                                                    </button>
+
+                                                </div>
+
+                                            </td>
+
+                                        </tr>
+
+                                    @empty
+
+                                        <tr>
+                                            <td
+                                                colspan="5"
+                                                class="px-6 py-12 text-center text-sm text-slate-500"
+                                            >
+                                                No users found.
+                                            </td>
+                                        </tr>
+
+                                    @endforelse
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+            </div>
+
+        </main>
 
     </div>
 
 
-    {{-- modal --}}
+    {{-- Invite Staff Modal --}}
 
     <div
-    id="staffModal"
-    class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4"
->
-    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6">
+        id="staffModal"
+        class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4"
+    >
 
-        <div class="flex justify-between items-center mb-5">
+        <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6">
 
-            <h2 class="text-xl font-bold">
-                Register Staff
-            </h2>
+            <div class="flex justify-between items-center mb-5">
 
-            <button
-                type="button"
-                onclick="closeStaffModal()"
-                class="text-gray-500 text-xl"
-            >
-                &times;
-            </button>
+                <h2 class="text-xl font-bold">
+                    Invite Staff
+                </h2>
 
-        </div>
-
-
-        <div
-            id="staffFormMessage"
-            class="hidden mb-4"
-        ></div>
-
-
-        <form id="staffForm">
-
-            @csrf
-
-            <div class="space-y-4">
-
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Full Name"
-                    class="w-full border rounded-lg px-3 py-2"
-                    required
+                <button
+                    type="button"
+                    onclick="closeStaffModal()"
+                    class="text-gray-500 text-xl"
                 >
-
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    class="w-full border rounded-lg px-3 py-2"
-                    required
-                >
-
-                <input
-                    type="text"
-                    name="phone"
-                    placeholder="Phone Number"
-                    class="w-full border rounded-lg px-3 py-2"
-                >
-
-                <input
-                    type="text"
-                    name="employee_id"
-                    placeholder="Employee ID (Optional)"
-                    class="w-full border rounded-lg px-3 py-2"
-                >
-
-                <input
-                    type="password"
-                    name="password"
-                    placeholder="Password"
-                    class="w-full border rounded-lg px-3 py-2"
-                    required
-                >
-
-                <input
-                    type="password"
-                    name="password_confirmation"
-                    placeholder="Confirm Password"
-                    class="w-full border rounded-lg px-3 py-2"
-                    required
-                >
+                    &times;
+                </button>
 
             </div>
 
 
-            <button
-                type="submit"
-                id="registerStaffBtn"
-                class="w-full bg-blue-600 text-white py-2.5 rounded-lg mt-5"
+            <div
+                id="staffFormMessage"
+                class="hidden mb-4"
+            ></div>
+
+
+            <form
+                id="staffForm"
+                method="POST"
             >
-                Register Staff
-            </button>
 
-        </form>
+                @csrf
 
-    </div>
-</div>
+                <div class="space-y-4">
 
-<!-- Office Location Modal -->
-<div
-    id="locationModal"
-    class="hidden fixed inset-0 z-50 bg-black/50
-           items-center justify-center px-4"
->
-    <div class="bg-white w-full max-w-sm rounded-xl shadow-xl p-6">
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Staff Email"
+                        class="w-full border rounded-lg px-3 py-2"
+                        required
+                    >
 
-        <h2 class="text-lg font-semibold text-gray-900">
-            Save Office Location
-        </h2>
+                </div>
 
-        <p class="text-sm text-gray-500 mt-2">
-            Make sure you are around the office before saving
-            the office location.
-        </p>
 
-        <div class="flex justify-end gap-3 mt-6">
+                <button
+                    type="submit"
+                    id="registerStaffBtn"
+                    class="w-full bg-blue-600 text-white py-2.5 rounded-lg mt-5"
+                >
+                    Send Invitation
+                </button>
 
-            <button
-                type="button"
-                onclick="closeLocationModal()"
-                class="px-4 py-2 rounded-lg border
-                       border-gray-300 text-gray-700"
-            >
-                Cancel
-            </button>
-
-            <button
-                type="button"
-                onclick="getOfficeLocation()"
-                id="saveLocationButton"
-                class="px-4 py-2 rounded-lg
-                       bg-blue-700 text-white"
-            >
-                Save
-            </button>
+            </form>
 
         </div>
 
     </div>
-</div>
 
- {{-- script --}}
+
+    <!-- Office Location Modal -->
+
+    <div
+        id="locationModal"
+        class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center px-4"
+    >
+
+        <div class="bg-white w-full max-w-sm rounded-xl shadow-xl p-6">
+
+            <h2 class="text-lg font-semibold text-gray-900">
+                Save Office Location
+            </h2>
+
+            <p class="text-sm text-gray-500 mt-2">
+                Make sure you are around the office before saving
+                the office location.
+            </p>
+
+
+            <div class="flex justify-end gap-3 mt-6">
+
+                <button
+                    type="button"
+                    onclick="closeLocationModal()"
+                    class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    type="button"
+                    onclick="getOfficeLocation()"
+                    id="saveLocationButton"
+                    class="px-4 py-2 rounded-lg bg-blue-700 text-white"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
 <script>
-    function openLocationModal() {
-        const modal = document.getElementById('locationModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+
+    function showUsersView() {
+
+        document.getElementById('dashboardView').classList.add('hidden');
+
+        document.getElementById('usersView').classList.remove('hidden');
+
     }
+
+
+    function showDashboardView() {
+
+        document.getElementById('usersView').classList.add('hidden');
+
+        document.getElementById('dashboardView').classList.remove('hidden');
+
+    }
+
+
+    function openLocationModal() {
+
+        const modal = document.getElementById('locationModal');
+
+        modal.classList.remove('hidden');
+
+        modal.classList.add('flex');
+
+    }
+
 
     function closeLocationModal() {
+
         const modal = document.getElementById('locationModal');
+
         modal.classList.add('hidden');
+
         modal.classList.remove('flex');
+
     }
+
+
     function openStaffModal() {
+
         const modal = document.getElementById('staffModal');
 
         modal.classList.remove('hidden');
+
         modal.classList.add('flex');
+
     }
 
+
     function closeStaffModal() {
+
         const modal = document.getElementById('staffModal');
 
         modal.classList.add('hidden');
+
         modal.classList.remove('flex');
+
     }
 
+
     function getOfficeLocation() {
+
         const button = document.getElementById('saveLocationButton');
+
         button.disabled = true;
+
         button.innerText = 'Getting location...';
+
+
         if (!navigator.geolocation) {
+
             alert('Location service are not supported by this browser');
+
             button.disabled = false;
+
             button.innerText = 'Save';
+
             return;
+
         }
 
+
         navigator.geolocation.getCurrentPosition(
-            function(position){
+
+            function(position) {
+
                 const latitude = position.coords.latitude;
+
                 const longitude = position.coords.longitude;
 
+
                 console.log('office latitude:', latitude);
+
                 console.log('office longitude:', longitude);
+
                 console.log('accuracy:', position.coords.accuracy);
+
 
                 button.innerText = 'Saving...';
 
+
                 fetch("{{ route('admin.office-location.store', [], false) }}", {
+
                     method: 'POST',
+
                     headers: {
+
                         'Content-Type': 'application/json',
+
                         'Accept': 'application/json',
+
                         'X-CSRF-TOKEN': "{{ csrf_token() }}"
+
                     },
+
                     body: JSON.stringify({
+
                         latitude: latitude,
+
                         longitude: longitude,
+
                     })
+
                 })
+
                 .then(response => response.json())
+
                 .then(data => {
+
                     if (data.success) {
+
                         alert(data.message);
+
                         closeLocationModal();
+
                     } else {
+
                         alert('Unable to save office location.');
+
                     }
 
+
                     button.disabled = false;
+
                     button.innerText = 'Save';
+
                 })
+
                 .catch(error => {
+
                     console.error(error);
+
                     alert('Something went wrong while saving the location.');
+
                     button.disabled = false;
+
                     button.innerText = 'Save';
-                })
+
+                });
+
             },
+
 
             function(error) {
+
                 console.log(error);
+
                 alert('Unable to get your current location.');
+
                 button.disabled = false;
+
                 button.innerText = 'Save';
+
             },
 
+
             {
+
                 enableHighAccuracy: true,
+
                 timeout: 15000,
+
                 maximumAge: 0
+
             }
+
         );
+
     }
 
 
-    document.getElementById('staffForm').addEventListener('submit', async function (event) {
+    // Invite Staff
+
+    document.getElementById('staffForm').addEventListener('submit', async function(event) {
 
         event.preventDefault();
 
+
         const form = this;
+
         const button = document.getElementById('registerStaffBtn');
+
         const message = document.getElementById('staffFormMessage');
 
+
         button.disabled = true;
-        button.innerText = 'Registering...';
+
+        button.innerText = 'Sending...';
+
 
         const formData = new FormData(form);
+
 
         try {
 
             const response = await fetch(
-                "{{ route('staff.store') }}",
+                "{{ route('admin.invitations.store') }}",
                 {
                     method: 'POST',
+
                     headers: {
+
                         'X-CSRF-TOKEN': "{{ csrf_token() }}",
+
                         'Accept': 'application/json'
+
                     },
+
                     body: formData
                 }
             );
 
+
             const data = await response.json();
 
-            if (response.ok && data.success) {
+
+            if (response.ok) {
 
                 message.className =
                     'mb-4 p-3 rounded-lg bg-green-100 text-green-700';
 
-                message.innerText = data.message;
+                message.innerText =
+                    data.message || 'Invitation created successfully.';
+
 
                 form.reset();
 
+
                 setTimeout(() => {
+
                     closeStaffModal();
+
                     window.location.reload();
+
                 }, 800);
 
+
                 return;
+
             }
 
 
-        if (response.status === 422) {
+            if (response.status === 422) {
 
-            const errors = Object.values(data.errors || {})
-                .flat()
-                .join(' ');
+                const errors = Object.values(data.errors || {})
+                    .flat()
+                    .join(' ');
+
+
+                message.className =
+                    'mb-4 p-3 rounded-lg bg-red-100 text-red-700';
+
+
+                message.innerText =
+                    errors || 'Please check the email provided.';
+
+
+                return;
+
+            }
+
 
             message.className =
                 'mb-4 p-3 rounded-lg bg-red-100 text-red-700';
 
-            message.innerText =
-                errors || 'Please check the information provided.';
 
-            return;
+            message.innerText =
+                data.message || 'Unable to send invitation.';
+
+
+        } catch (error) {
+
+            console.error(error);
+
+
+            message.className =
+                'mb-4 p-3 rounded-lg bg-red-100 text-red-700';
+
+
+            message.innerText =
+                'Something went wrong. Please try again.';
+
+        } finally {
+
+            button.disabled = false;
+
+            button.innerText = 'Send Invitation';
+
         }
 
+    });
 
-        message.className =
-            'mb-4 p-3 rounded-lg bg-red-100 text-red-700';
-
-        message.innerText =
-            data.message || 'Unable to register staff.';
-
-    } catch (error) {
-
-        console.error(error);
-
-        message.className =
-            'mb-4 p-3 rounded-lg bg-red-100 text-red-700';
-
-        message.innerText =
-            'Something went wrong. Please try again.';
-
-    } finally {
-
-        button.disabled = false;
-        button.innerText = 'Register Staff';
-
-    }
-
-});
 </script>
+
 
 </body>
 
 </html>
+

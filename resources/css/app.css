@@ -6,6 +6,81 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+    --brand-red: #e24237;
+    --brand-orange: #f2752c;
+    --brand-vivid: #ed6632;
+    --brand-dark: #d14a3c;
+    --brand-gold: #ed8b30;
+    --ink: #20242c;
+    --muted: #69707d;
+    --canvas: #f6f7f9;
+    --line: #e7e9ed;
+    --surface: #ffffff;
+}
+
+@layer base {
+    html { font-family: var(--font-sans); background: var(--canvas); }
+    body { color: var(--ink); background: var(--canvas); letter-spacing: 0; }
+    ::selection { background: rgba(226, 66, 55, .18); color: var(--ink); }
+    button, input, select, textarea { font: inherit; }
+    input:focus, select:focus, textarea:focus {
+        border-color: var(--brand-red) !important;
+        box-shadow: 0 0 0 4px rgba(226, 66, 55, .12) !important;
+    }
+}
+
+@layer components {
+    .brand-mark {
+        background: linear-gradient(135deg, var(--brand-red), var(--brand-orange));
+        box-shadow: 0 10px 24px rgba(226, 66, 55, .22);
+    }
+    .brand-button {
+        background: var(--brand-red);
+        box-shadow: 0 8px 18px rgba(226, 66, 55, .18);
+    }
+    .brand-button:hover { background: var(--brand-dark); }
+}
+
+/* Bring the existing utility classes into the product palette. */
+.bg-gray-100, .bg-slate-50 { background-color: var(--canvas) !important; }
+.bg-gray-50, .bg-slate-100 { background-color: #fafafa !important; }
+.bg-white { background-color: var(--surface) !important; }
+.bg-orange-500, .bg-orange-600, .bg-cyan-500 { background-color: var(--brand-red) !important; }
+.bg-cyan-50 { background-color: #fff1ef !important; }
+.bg-blue-50 { background-color: #fff5ed !important; }
+.bg-green-50, .bg-emerald-50 { background-color: #edf8f1 !important; }
+.bg-red-50 { background-color: #fff1ef !important; }
+.bg-yellow-50 { background-color: #fff8e9 !important; }
+.text-cyan-300, .text-cyan-400, .text-cyan-500, .text-cyan-600, .text-cyan-700 { color: var(--brand-red) !important; }
+.text-orange-600, .text-orange-700 { color: var(--brand-red) !important; }
+.text-gray-900, .text-slate-950 { color: var(--ink) !important; }
+.text-gray-800, .text-slate-900 { color: #2b3038 !important; }
+.text-gray-700, .text-slate-700 { color: #4c5562 !important; }
+.text-gray-600, .text-slate-600 { color: #69707d !important; }
+.text-gray-500, .text-slate-500 { color: var(--muted) !important; }
+.border-gray-200, .border-gray-300, .border-slate-200 { border-color: var(--line) !important; }
+.border-orange-500, .border-cyan-500 { border-color: var(--brand-red) !important; }
+.hover\:bg-orange-700:hover, .hover\:bg-orange-600:hover, .hover\:bg-cyan-600:hover { background-color: var(--brand-dark) !important; }
+.hover\:bg-slate-50:hover, .hover\:bg-gray-50:hover { background-color: #fff8f6 !important; }
+.hover\:text-slate-950:hover { color: var(--brand-red) !important; }
+
+body > div, body > main { animation: page-enter .45s ease-out both; }
+button, a, input, select { transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .2s ease; }
+button:hover:not(:disabled) { transform: translateY(-1px); }
+table { border-collapse: separate; border-spacing: 0; }
+thead th { color: #858b95 !important; }
+tbody tr:hover { background: #fff9f7 !important; }
+
+@keyframes page-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+    body { overflow-x: hidden; }
+    .shadow-xl { box-shadow: 0 18px 45px rgba(37, 31, 31, .1) !important; }
 }

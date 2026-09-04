@@ -12,15 +12,20 @@
     <title>Staff Attendance | Dudumizi</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen bg-slate-50 p-4 text-slate-900 sm:p-8">
 
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8">
+    <div class="mx-auto w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_55px_rgba(15,23,42,0.08)] sm:p-10">
 
         <div class="text-center">
 
-            <h1 class="text-2xl font-bold text-gray-800">
+            <div class="brand-mark mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M12 7v5l3 2" /></svg>
+            </div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">StaffFlow / Attendance</p>
+            <h1 class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
                 Welcome, {{ auth()->user()->name }}!
             </h1>
 
@@ -28,29 +33,29 @@
 
                 <div class="mt-6">
 
-                    <p class="text-gray-600">
+                    <p class="text-slate-500">
                         Your attendance has already been recorded today.
                     </p>
 
-                    <div class="mt-6 space-y-3 text-left">
+                    <div class="mt-6 grid gap-3 text-left sm:grid-cols-2">
 
-                        <p>
-                            <strong>Date:</strong>
+                            <p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                                <strong class="block text-xs uppercase tracking-wide text-slate-400">Date</strong>
                             {{ $attendance->attendance_date->format('d F Y') }}
                         </p>
 
-                        <p>
-                            <strong>Day:</strong>
+                            <p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                                <strong class="block text-xs uppercase tracking-wide text-slate-400">Day</strong>
                             {{ $attendance->attendance_date->format('l') }}
                         </p>
 
-                        <p>
-                            <strong>Time of Arrival:</strong>
+                            <p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                                <strong class="block text-xs uppercase tracking-wide text-slate-400">Time of Arrival</strong>
                             {{ \Carbon\Carbon::parse($attendance->check_in_time)->format('h:i A') }}
                         </p>
 
-                        <p>
-                            <strong>Status:</strong>
+                            <p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                                <strong class="block text-xs uppercase tracking-wide text-slate-400">Status</strong>
                             {{ ucfirst($attendance->status) }}
                         </p>
 
@@ -62,7 +67,7 @@
 
                 <div
                     id="attendance-message"
-                    class="mt-6 text-gray-600"
+                    class="mt-6 text-slate-600"
                 >
                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 text-blue-700">
                         <div class="font-semibold">
@@ -89,7 +94,7 @@
 
             <button
                 type="submit"
-                class="w-full bg-red-500 text-white py-3 rounded-xl"
+                class="brand-button w-full rounded-xl py-3 text-sm font-semibold text-white"
             >
                 Logout
             </button>
@@ -355,7 +360,7 @@
                     maximumAge: 0
                 }
                 );
-                
+
 
         }
         // get location immediately

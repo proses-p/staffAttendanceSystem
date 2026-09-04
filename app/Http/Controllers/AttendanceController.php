@@ -21,8 +21,8 @@ class AttendanceController extends Controller
         $latitude = $data['latitude'];
         $longitude = $data['longitude'];
         $accuracy = $data['accuracy'];
-
         $office = OfficeLocation::first();
+
 
         if (!$office) {
             return response()->json([
