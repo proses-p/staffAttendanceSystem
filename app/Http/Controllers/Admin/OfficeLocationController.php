@@ -9,6 +9,27 @@ use Illuminate\Http\Request;
 class OfficeLocationController extends Controller
 {
     public function store(Request $request) {
+        if ($request->has('allowed_radius')) {
+            $data = $request->validate([
+                'allowed_radius' => ['required', 'integer', 'min:1'],
+            ]);
+            $location = OfficeLocation::first();
+
+            if (!$location) {
+                return redirect()
+                    ->route('admin.dashboard')
+                    ->with('error', 'Save an office location before updating the allowed distance.');
+            }
+
+            $location->update([
+                'allowed_radius' => $data['allowed_radius'],
+            ]);
+
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('success', 'Allowed distance updated successfully.');
+        }
+
         $request->validate([
             'latitude' => ['required', 'numeric'],
             'longitude' => ['required', 'numeric'],

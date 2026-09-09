@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.check-in');
     Route::post('staff/location', [AttendanceController::class, 'updateLocation'])->name('staff.location.update');
+    Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut'])->name('attendance.check-out');
 
     // staff management routes
     Route::resource('/admin/staff', StaffController::class)->middleware('role:admin');

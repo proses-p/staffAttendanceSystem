@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\OfficeLocation;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -21,6 +22,8 @@ class AdminDashboardController extends Controller
             ])
             ->get();
 
-        return view('admin.dashboard', compact('staff', 'today'));
+        $officeLocation = OfficeLocation::first();
+
+        return view('admin.dashboard', compact('staff', 'today', 'officeLocation'));
     }
 }

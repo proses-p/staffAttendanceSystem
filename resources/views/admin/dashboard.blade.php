@@ -13,6 +13,7 @@
     <title>Admin Dashboard · Attendance</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
@@ -31,11 +32,16 @@
                     <div>
                         <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">
                             <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
-                            Operations overview
+                                Current distance:
+                                @if ($officeLocation)
+                                    {{ $officeLocation->allowed_radius }}m
+                                @else
+                                    Not configured
+                                @endif
                         </div>
 
                         <h1 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                            Good morning, admin.
+                            Welcome, admin.
                         </h1>
 
                         <p class="mt-2 text-sm text-slate-500">
@@ -94,9 +100,22 @@
                             Save location
                         </button>
 
+                        
                     </div>
                 </header>
 
+
+                @if (session('success'))
+                    <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if (session('error'))
+                    <div class="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {{ session('error') }}
+                    </div>
+                @endif
 
                 <div id="dashboardView">
                     <x-admin-statistics />
@@ -146,9 +165,11 @@
 
                                     <tr class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
 
-                                        <th class="px-6 py-4">User</th>
-                                        <th class="px-6 py-4">Email</th>
-                                        <th class="px-6 py-4">Role</th>
+                                        <th class="px-6 py-4">Staff name</th>
+                                        <th class="px-6 py-4">Date</th>
+                                        <th class="px-6 py-4">Sign in</th>
+                                        <th class="px-6 py-4">Sign out</th>
+                                        <th class="px-6 py-4">Work duration</th>
                                         <th class="px-6 py-4">Attendance status</th>
                                         <th class="px-6 py-4 text-right">Actions</th>
 
@@ -181,9 +202,7 @@
                                                             {{ $member->name }}
                                                         </p>
 
-                                                        <p class="mt-0.5 text-xs text-slate-400">
-                                                            Staff member
-                                                        </p>
+                                                        <p class="mt-0.5 text-xs text-slate-400">{{ $member->email }}</p>
 
                                                     </div>
 
@@ -193,41 +212,39 @@
 
 
                                             <td class="px-6 py-4 text-sm text-slate-600">
-                                                {{ $member->email }}
+                                                {{ $today->format('d M Y') }}
+                                            </td>
+
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                {{ $todayAttendance?->check_in_time?->format('h:i A') ?? '—' }}
+                                            </td>
+
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                {{ $todayAttendance?->check_out_time?->format('h:i A') ?? '—' }}
+                                            </td>
+
+                                            <td class="px-6 py-4 text-sm font-medium text-slate-600">
+                                                {{ $todayAttendance?->work_duration ?? '—' }}
                                             </td>
 
 
                                             <td class="px-6 py-4">
 
-                                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-600">
-                                                    {{ $member->role }}
-                                                </span>
-
-                                            </td>
-
-
-                                            <td class="px-6 py-4">
-
-                                                @if ($todayAttendance)
-
-                                                    <div class="space-y-1">
-
-                                                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
-                                                            🟢 Signed In
-                                                        </span>
-
-                                                        <p class="text-xs text-slate-500">
-                                                            {{ $todayAttendance->check_in_time?->format('h:i A') ?? 'Time unavailable' }}
-                                                        </p>
-
-                                                    </div>
-
-                                                @else
-
-                                                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-rose-700">
-                                                        🔴 Not Signed In
+                                                @if ($todayAttendance?->check_out_time)
+                                                    <span class="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
+                                                        Signed Out
                                                     </span>
-
+                                                @elseif ($todayAttendance)
+                                                    <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                                        In Office
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700">
+                                                        <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                                                        Not Signed In
+                                                    </span>
                                                 @endif
 
                                             </td>
@@ -237,8 +254,8 @@
 
                                                 <div class="flex justify-end gap-1">
 
-                                                    <button
-                                                        type="button"
+                                                    <a
+                                                        href="{{ route('staff.show', $member) }}"
                                                         aria-label="View {{ $member->name }}"
                                                         title="View"
                                                         class="rounded-lg p-2 text-slate-400 transition hover:bg-cyan-50 hover:text-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -257,11 +274,11 @@
                                                             />
                                                             <circle cx="12" cy="12" r="3" />
                                                         </svg>
-                                                    </button>
+                                                    </a>
 
 
-                                                    <button
-                                                        type="button"
+                                                    <a
+                                                        href="{{ route('staff.edit', $member) }}"
                                                         aria-label="Edit {{ $member->name }}"
                                                         title="Edit"
                                                         class="rounded-lg p-2 text-slate-400 transition hover:bg-amber-50 hover:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -283,15 +300,23 @@
                                                                 d="m14.5 7.5 2 2"
                                                             />
                                                         </svg>
-                                                    </button>
+                                                    </a>
 
 
-                                                    <button
-                                                        type="button"
+                                                    <form
+                                                        method="POST"
+                                                        action="{{ route('staff.destroy', $member) }}"
+                                                        onsubmit="return confirm('Are you sure you want to delete {{ addslashes($member->name) }}?');"
+                                                        class="inline"
+                                                    >
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button
+                                                            type="submit"
                                                         aria-label="Delete {{ $member->name }}"
                                                         title="Delete"
                                                         class="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                                                    >
+                                                        >
                                                         <svg
                                                             class="h-5 w-5"
                                                             fill="none"
@@ -305,7 +330,8 @@
                                                                 d="M4 7h16m-10 4v5m4-5v5M9 7V4h6v3m-9 0 1 13h10l1-13"
                                                             />
                                                         </svg>
-                                                    </button>
+                                                        </button>
+                                                    </form>
 
                                                 </div>
 
@@ -317,7 +343,7 @@
 
                                         <tr>
                                             <td
-                                                colspan="5"
+                                                colspan="6"
                                                 class="px-6 py-12 text-center text-sm text-slate-500"
                                             >
                                                 No users found.
@@ -334,6 +360,61 @@
 
                     </div>
 
+                </section>
+
+                <section
+                    id="distanceView"
+                    class="hidden"
+                    aria-labelledby="distanceHeading"
+                >
+                    <div class="mb-6">
+                        <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">
+                            <span class="h-2 w-2 rounded-full bg-cyan-500"></span>
+                            Attendance boundary
+                        </div>
+
+                        <h2 id="distanceHeading" class="text-3xl font-semibold tracking-tight text-slate-950">
+                            Distance
+                        </h2>
+
+                        <p class="mt-2 text-sm text-slate-500">
+                            Set how close staff must be to the office when signing in or out.
+                        </p>
+                    </div>
+
+                    <div class="max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <form method="POST" action="{{ route('admin.office-location.store', [], false) }}">
+                            @csrf
+
+                            <label for="allowed_radius" class="mb-2 block text-sm font-semibold text-slate-700">
+                                Allowed distance (meters)
+                            </label>
+                            <input
+                                type="number"
+                                id="allowed_radius"
+                                name="allowed_radius"
+                                min="1"
+                                step="1"
+                                value="{{ old('allowed_radius', $officeLocation?->allowed_radius) }}"
+                                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                required
+                            >
+                            @error('allowed_radius')
+                                <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+
+                            <p class="mt-2 text-xs text-slate-500">
+                                Current distance: {{ $officeLocation?->allowed_radius ?? 'Not configured' }}m
+                            </p>
+
+                            <button
+                                type="submit"
+                                class="mt-5 rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                            >
+                                Save distance
+                            </button>
+                        </form>
+                    </div>
                 </section>
 
 
@@ -429,6 +510,26 @@
                 the office location.
             </p>
 
+            <div id="locationMessage" class="hidden mt-4 rounded-lg px-3 py-2 text-sm"></div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                    <label for="officeLatitude" class="mb-1 block text-xs font-semibold text-gray-600">Latitude</label>
+                    <input type="number" id="officeLatitude" step="any" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" readonly>
+                </div>
+                <div>
+                    <label for="officeLongitude" class="mb-1 block text-xs font-semibold text-gray-600">Longitude</label>
+                    <input type="number" id="officeLongitude" step="any" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" readonly>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <label for="officeAddress" class="mb-1 block text-xs font-semibold text-gray-600">Detected location</label>
+                <input type="text" id="officeAddress" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Resolving location..." readonly>
+            </div>
+
+            <div id="officeLocationMap" class="mt-4 h-56 w-full rounded-lg"></div>
+
 
             <div class="flex justify-end gap-3 mt-6">
 
@@ -443,7 +544,7 @@
 
                 <button
                     type="button"
-                    onclick="getOfficeLocation()"
+                    onclick="saveOfficeLocation()"
                     id="saveLocationButton"
                     class="px-4 py-2 rounded-lg bg-blue-700 text-white"
                 >
@@ -457,11 +558,13 @@
     </div>
 
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 
     function showUsersView() {
 
         document.getElementById('dashboardView').classList.add('hidden');
+        document.getElementById('distanceView').classList.add('hidden');
 
         document.getElementById('usersView').classList.remove('hidden');
 
@@ -471,9 +574,24 @@
     function showDashboardView() {
 
         document.getElementById('usersView').classList.add('hidden');
+        document.getElementById('distanceView').classList.add('hidden');
 
         document.getElementById('dashboardView').classList.remove('hidden');
 
+    }
+
+
+    function showDistanceView() {
+
+        document.getElementById('dashboardView').classList.add('hidden');
+        document.getElementById('usersView').classList.add('hidden');
+
+        document.getElementById('distanceView').classList.remove('hidden');
+
+    }
+
+    if (window.location.hash === '#users') {
+        showUsersView();
     }
 
 
@@ -484,6 +602,9 @@
         modal.classList.remove('hidden');
 
         modal.classList.add('flex');
+
+        initializeLocationMap();
+        getOfficeLocation();
 
     }
 
@@ -521,18 +642,112 @@
     }
 
 
+    let officeLocationMap;
+    let officeLocationMarker;
+    let officeLocationLookupId = 0;
+
+
+    function initializeLocationMap() {
+
+        if (officeLocationMap) {
+            officeLocationMap.invalidateSize();
+            return;
+        }
+
+        officeLocationMap = L.map('officeLocationMap').setView([0, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(officeLocationMap);
+
+    }
+
+
+    function setOfficeLocation(latitude, longitude) {
+
+        const numericLatitude = Number(latitude);
+        const numericLongitude = Number(longitude);
+        const addressElement = document.getElementById('officeAddress');
+        const saveButton = document.getElementById('saveLocationButton');
+        const lookupId = ++officeLocationLookupId;
+
+        document.getElementById('officeLatitude').value = numericLatitude.toFixed(7);
+        document.getElementById('officeLongitude').value = numericLongitude.toFixed(7);
+        addressElement.value = 'Resolving location...';
+        saveButton.disabled = true;
+
+        const coordinates = [numericLatitude, numericLongitude];
+
+        if (!officeLocationMarker) {
+            officeLocationMarker = L.marker(coordinates, { draggable: true }).addTo(officeLocationMap);
+            officeLocationMarker.on('dragend', function (event) {
+                const position = event.target.getLatLng();
+                setOfficeLocation(position.lat, position.lng);
+            });
+        } else {
+            officeLocationMarker.setLatLng(coordinates);
+        }
+
+        officeLocationMap.setView(coordinates, 17);
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(numericLatitude)}&lon=${encodeURIComponent(numericLongitude)}&zoom=18&addressdetails=1`, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Reverse geocoding failed.');
+            }
+
+            return response.json();
+        })
+        .then(data => {
+            if (lookupId !== officeLocationLookupId) {
+                return;
+            }
+
+            addressElement.value = data.display_name || 'Address not found for these coordinates.';
+            saveButton.disabled = !data.display_name;
+        })
+        .catch(error => {
+            if (lookupId !== officeLocationLookupId) {
+                return;
+            }
+
+            console.error(error);
+            addressElement.value = 'Unable to determine the address for these coordinates.';
+            showLocationMessage('Unable to determine the location address. Please try again.', true);
+            saveButton.disabled = true;
+        });
+
+    }
+
+
+    function showLocationMessage(message, isError = false) {
+
+        const messageElement = document.getElementById('locationMessage');
+
+        messageElement.innerText = message;
+        messageElement.className = isError
+            ? 'mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700'
+            : 'mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700';
+
+    }
+
+
     function getOfficeLocation() {
 
         const button = document.getElementById('saveLocationButton');
 
         button.disabled = true;
 
-        button.innerText = 'Getting location...';
+        button.innerText = 'Locating...';
 
 
         if (!navigator.geolocation) {
 
-            alert('Location service are not supported by this browser');
+            showLocationMessage('Location services are not supported by this browser.', true);
 
             button.disabled = false;
 
@@ -552,83 +767,20 @@
                 const longitude = position.coords.longitude;
 
 
-                console.log('office latitude:', latitude);
-
-                console.log('office longitude:', longitude);
-
-                console.log('accuracy:', position.coords.accuracy);
-
-
-                button.innerText = 'Saving...';
-
-
-                fetch("{{ route('admin.office-location.store', [], false) }}", {
-
-                    method: 'POST',
-
-                    headers: {
-
-                        'Content-Type': 'application/json',
-
-                        'Accept': 'application/json',
-
-                        'X-CSRF-TOKEN': "{{ csrf_token() }}"
-
-                    },
-
-                    body: JSON.stringify({
-
-                        latitude: latitude,
-
-                        longitude: longitude,
-
-                    })
-
-                })
-
-                .then(response => response.json())
-
-                .then(data => {
-
-                    if (data.success) {
-
-                        alert(data.message);
-
-                        closeLocationModal();
-
-                    } else {
-
-                        alert('Unable to save office location.');
-
-                    }
-
-
-                    button.disabled = false;
-
-                    button.innerText = 'Save';
-
-                })
-
-                .catch(error => {
-
-                    console.error(error);
-
-                    alert('Something went wrong while saving the location.');
-
-                    button.disabled = false;
-
-                    button.innerText = 'Save';
-
-                });
+                setOfficeLocation(latitude, longitude);
+                showLocationMessage('Location detected. Drag the marker to adjust it before saving.');
+                button.innerText = 'Save';
 
             },
 
 
             function(error) {
 
-                console.log(error);
+                const message = error.code === error.PERMISSION_DENIED
+                    ? 'Location permission was denied. Please allow access and try again.'
+                    : 'Unable to detect your location. Please try again.';
 
-                alert('Unable to get your current location.');
+                showLocationMessage(message, true);
 
                 button.disabled = false;
 
@@ -648,6 +800,54 @@
             }
 
         );
+
+    }
+
+
+    function saveOfficeLocation() {
+
+        const button = document.getElementById('saveLocationButton');
+        const latitude = document.getElementById('officeLatitude').value;
+        const longitude = document.getElementById('officeLongitude').value;
+
+        if (!latitude || !longitude) {
+            showLocationMessage('Detect your location before saving.', true);
+            return;
+        }
+
+        button.disabled = true;
+        button.innerText = 'Saving...';
+
+        fetch("{{ route('admin.office-location.store', [], false) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                latitude: Number(latitude),
+                longitude: Number(longitude),
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                closeLocationModal();
+            } else {
+                showLocationMessage('Unable to save office location.', true);
+            }
+
+            button.disabled = false;
+            button.innerText = 'Save';
+        })
+        .catch(error => {
+            console.error(error);
+            showLocationMessage('Something went wrong while saving the location.', true);
+            button.disabled = false;
+            button.innerText = 'Save';
+        });
 
     }
 

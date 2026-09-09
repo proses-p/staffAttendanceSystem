@@ -20,6 +20,38 @@
     <div class="mx-auto w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_55px_rgba(15,23,42,0.08)] sm:p-10">
 
         <div class="text-center">
+            <div class="mb-8 flex justify-end">
+                <details class="relative">
+                    <summary class="flex cursor-pointer list-none items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-sm font-semibold text-orange-700">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        </span>
+                        <span class="hidden text-left sm:block">
+                            <span class="block text-xs font-semibold text-slate-900">{{ auth()->user()->name }}</span>
+                            <span class="block text-[11px] text-slate-500">Staff member</span>
+                        </span>
+                        <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+                        </svg>
+                    </summary>
+                    <div class="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-lg">
+                        <div class="border-b border-slate-100 px-3 py-2">
+                            <p class="truncate text-sm font-semibold text-slate-900">{{ auth()->user()->name }}</p>
+                            <p class="truncate text-xs text-slate-500">{{ auth()->user()->email }}</p>
+                        </div>
+                        <form method="POST" action="{{ route('logout', [], false) }}" class="mt-1">
+                            @csrf
+                            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3m0 0 4-4m-4 4 4 4M13 5V3h8v18h-8v-2" />
+                                </svg>
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </details>
+            </div>
+
 
             <div class="brand-mark mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M12 7v5l3 2" /></svg>
@@ -59,6 +91,37 @@
                             {{ ucfirst($attendance->status) }}
                         </p>
 
+                            <p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                                <strong class="block text-xs uppercase tracking-wide text-slate-400">Work duration</strong>
+                            {{ $attendance->work_duration ?? '—' }}
+                        </p>
+
+                    </div>
+
+                    <div
+                        id="checkout-section"
+                        class="mt-6"
+                    >
+                        @if ($attendance->check_out_time)
+                            <div class="rounded-xl border border-green-200 bg-green-50 p-5 text-left text-green-700">
+                                <h3 class="text-lg font-semibold">Signed Out ✓</h3>
+                                <div class="mt-4 space-y-2 text-sm">
+                                    <p><strong>Date:</strong> {{ $attendance->attendance_date->format('d F Y') }}</p>
+                                    <p><strong>Day:</strong> {{ $attendance->attendance_date->format('l') }}</p>
+                                    <p><strong>Time of Departure:</strong> {{ \Carbon\Carbon::parse($attendance->check_out_time)->format('h:i A') }}</p>
+                                    <p><strong>Work duration:</strong> {{ $attendance->work_duration ?? '—' }}</p>
+                                </div>
+                            </div>
+                        @else
+                            <button
+                                id="sign-out-button"
+                                type="button"
+                                class="brand-button w-full rounded-xl py-3 text-sm font-semibold text-white"
+                            >
+                                Sign Out
+                            </button>
+                            <div id="checkout-message" class="mt-4"></div>
+                        @endif
                     </div>
 
                 </div>
@@ -84,22 +147,6 @@
         </div>
 
 
-        <form
-            action="{{ route('logout', [], false) }}"
-            method="POST"
-            class="mt-8"
-        >
-
-            @csrf
-
-            <button
-                type="submit"
-                class="brand-button w-full rounded-xl py-3 text-sm font-semibold text-white"
-            >
-                Logout
-            </button>
-
-        </form>
 
     </div>
 
@@ -226,8 +273,20 @@
 
                                 </div>
 
+                                <div id="checkout-section" class="mt-6">
+                                    <button
+                                        id="sign-out-button"
+                                        type="button"
+                                        class="brand-button w-full rounded-xl py-3 text-sm font-semibold text-white"
+                                    >
+                                        Sign Out
+                                    </button>
+                                    <div id="checkout-message" class="mt-4"></div>
+                                </div>
+
                             </div>
                         `;
+                        renderCheckout(attendance);
                         return;
 
                     }
@@ -373,6 +432,127 @@
 </script>
 
     @endif
+
+    <script>
+        document.addEventListener('click', function (event) {
+            const button = event.target.closest('#sign-out-button');
+
+            if (!button || button.disabled) {
+                return;
+            }
+
+            const message = document.getElementById('checkout-message');
+
+            if (!navigator.geolocation) {
+                showCheckoutMessage('error', 'Location Not Supported', 'Your browser does not support location services.');
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'Getting location...';
+            showCheckoutMessage('info', 'Getting your location...', 'Please wait while we verify your location.');
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    fetch("{{ route('attendance.check-out', [], false) }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        })
+                    })
+                    .then(async response => ({
+                        status: response.status,
+                        data: await response.json()
+                    }))
+                    .then(result => {
+                        if (result.data.success) {
+                            renderCheckout(result.data.data);
+                            return;
+                        }
+
+                        button.disabled = false;
+                        button.textContent = 'Sign Out';
+                        showCheckoutMessage(
+                            result.status === 403 ? 'error' : 'warning',
+                            result.status === 409 ? 'Already Signed Out' : 'Unable to sign out',
+                            result.data.message ?? 'Something went wrong.'
+                        );
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        button.disabled = false;
+                        button.textContent = 'Sign Out';
+                        showCheckoutMessage('error', 'Connection Error', 'Unable to connect to the server. Please try again.');
+                    });
+                },
+                function (error) {
+                    button.disabled = false;
+                    button.textContent = 'Sign Out';
+
+                    const locationErrors = {
+                        [error.PERMISSION_DENIED]: ['Location permission required', 'Please allow location access in your browser to sign out.'],
+                        [error.POSITION_UNAVAILABLE]: ['Location unavailable', 'Unable to determine your current location.'],
+                        [error.TIMEOUT]: ['Location request timed out', 'Unable to get your location. Please try again.']
+                    };
+                    const [title, description] = locationErrors[error.code] ?? ['Location error', 'Unable to determine your location.'];
+                    showCheckoutMessage('warning', title, description);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
+
+        function showCheckoutMessage(type, title, description) {
+            const message = document.getElementById('checkout-message');
+
+            if (!message) {
+                return;
+            }
+
+            const styles = {
+                error: 'bg-red-50 border-red-200 text-red-700',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+                info: 'bg-blue-50 border-blue-200 text-blue-700'
+            };
+
+            message.innerHTML = `
+                <div class="border rounded-xl p-5 ${styles[type]}">
+                    <h3 class="font-semibold">${title}</h3>
+                    <p class="mt-2 text-sm">${description}</p>
+                </div>
+            `;
+        }
+
+        function renderCheckout(attendance) {
+            const section = document.getElementById('checkout-section');
+
+            if (!section) {
+                return;
+            }
+
+            section.innerHTML = `
+                <div class="rounded-xl border border-green-200 bg-green-50 p-5 text-left text-green-700">
+                    <h3 class="text-lg font-semibold">Signed Out ✓</h3>
+                    <div class="mt-4 space-y-2 text-sm">
+                        <p><strong>Date:</strong> ${attendance.date}</p>
+                        <p><strong>Day:</strong> ${attendance.day}</p>
+                        <p><strong>Time of Departure:</strong> ${attendance.departure_time}</p>
+                        <p><strong>Work duration:</strong> ${attendance.work_duration ?? '—'}</p>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
 
 </body>
 

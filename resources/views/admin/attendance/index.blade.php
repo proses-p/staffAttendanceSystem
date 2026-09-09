@@ -56,17 +56,11 @@
                             Staff Name
                         </th>
 
-                        <th class="px-6 py-4">
-                            Email
-                        </th>
-
-                        <th class="px-6 py-4">
-                            Check In
-                        </th>
-
-                        <th class="px-6 py-4">
-                            Status
-                        </th>
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Sign In</th>
+                        <th class="px-6 py-4">Sign Out</th>
+                        <th class="px-6 py-4">Work duration</th>
+                        <th class="px-6 py-4">Attendance status</th>
 
                     </tr>
 
@@ -93,37 +87,35 @@
                             </td>
 
                             <td class="px-6 py-4 text-sm text-slate-600">
-                                {{ $member->email }}
+                                {{ $today->format('d M Y') }}
                             </td>
 
                             <td class="px-6 py-4 text-sm text-slate-600">
+                                {{ $attendance?->check_in_time?->format('h:i A') ?? '—' }}
+                            </td>
 
-                                @if ($attendance)
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                {{ $attendance?->check_out_time?->format('h:i A') ?? '—' }}
+                            </td>
 
-                                    {{ \Carbon\Carbon::parse(
-                                        $attendance->check_in_time
-                                    )->format('h:i A') }}
-
-                                @else
-
-                                    <span class="text-slate-300">Not recorded</span>
-
-                                @endif
-
+                            <td class="px-6 py-4 text-sm font-medium text-slate-600">
+                                {{ $attendance?->work_duration ?? '—' }}
                             </td>
 
 
                             <td class="px-6 py-4">
 
-                                @if ($attendance)
-
+                                @if ($attendance?->check_out_time)
+                                    <span class="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
+                                        Signed Out
+                                    </span>
+                                @elseif ($attendance)
                                     <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
                                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                                        Present
+                                        In Office
                                     </span>
-
                                 @else
-
                                     <span class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700">
                                         <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                                         Not Signed In
@@ -140,7 +132,7 @@
                         <tr>
 
                             <td
-                                colspan="4"
+                                colspan="5"
                                 class="px-6 py-12 text-center text-sm text-slate-500"
                             >
                                 No active staff found.

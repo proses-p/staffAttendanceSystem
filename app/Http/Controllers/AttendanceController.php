@@ -88,9 +88,94 @@ class AttendanceController extends Controller
                 'arrival_time' => Carbon::parse(
                     $attendance->check_in_time
                 )->format('h:i A'),
+                'work_duration' => $attendance->work_duration,
                 'status' => $attendance->status,
             ],
         ], 201);
+    }
+
+    public function checkOut(Request $request) {
+        $data = $request->validate([
+            'latitude' => ['required', 'numeric'],
+            'longitude' => ['required', 'numeric'],
+            'accuracy' => ['required', 'numeric', 'min:0'],
+        ]);
+        $latitude = $data['latitude'];
+        $longitude = $data['longitude'];
+        $office = OfficeLocation::first();
+
+        if (!$office) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Office location has not been configured.',
+            ], 422);
+        }
+
+        $today = Carbon::today();
+        // signed out is connected with signed in, find todays attendance
+        $attendance = Attendance::where(
+            'user_id',
+            auth()->id()
+        )
+        ->whereDate('attendance_date', $today)
+        ->first();
+
+        // if not signed in cannot be signed out, its prevented by this code.
+        if (!$attendance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have not checked in today.',
+            ], 404);
+        }
+
+        // prevents from signing out two times.
+        if ($attendance->check_out_time) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have already checked out today.',
+            ], 409);
+        }
+
+        // calculate distance from office
+        $distance = $this->calculateDistance(
+            $latitude,
+            $longitude,
+            $office->latitude,
+            $office->longitude
+        );
+
+        // check if staff is within the staff area.
+        if ($distance > $office->allowed_radius) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are outside the allowed office area.',
+                'distance' => round($distance, 2),
+            ], 403);
+        }
+
+        // record sign out
+        $attendance->update([
+            'check_out_time' => now()->format('H:i:s'),
+            'check_out_latitude' => $latitude,
+            'check_out_longitude' => $longitude,
+            'check_out_distance' => $distance,
+        ]);
+
+        $attendance->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'You have successfully signed out.',
+            'data' => [
+                'date' => $attendance->attendance_date->format('d F Y'),
+                'day' => $attendance->attendance_date->format('l'),
+                'departure_time' => Carbon::parse(
+                    $attendance->check_out_time
+                )->format('h:i A'),
+                'work_duration' => $attendance->work_duration,
+                'status' => $attendance->status,
+            ],
+        ]);
     }
 
     // storing temporarily the location controllerer
