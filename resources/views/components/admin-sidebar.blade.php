@@ -1,4 +1,4 @@
-<aside class="w-full shrink-0 border-b border-slate-200 bg-white lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r">
+<aside class="admin-sidebar w-full shrink-0 border-b border-slate-200 bg-white lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r">
     <div class="flex h-full flex-col p-5 lg:p-6">
         <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-cyan-400 shadow-sm">

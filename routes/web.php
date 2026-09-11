@@ -10,6 +10,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\StaffController;
 use App\Mail\NearOfficeMail;
 use App\Models\Attendance;
+use App\Models\AttendanceSetting;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
@@ -47,10 +49,42 @@ Route::middleware('auth')->group(function () {
     // staff dashboard routes
     Route::get('/staff/dashboard', function () {
         $user = auth()->user();
-        $attendance = Attendance::where('user_id', auth()->id())
-            ->whereDate('attendance_date', today())
-            ->first();
-        return view('staff.dashboard', compact('attendance'));
+        $records = Attendance::where('user_id', $user->id)
+            ->orderByDesc('attendance_date')
+            ->paginate(6);
+        $attendance = $records->first(fn ($record) => $record->attendance_date->isToday());
+
+        // gets the all attendance of the month
+        $monthRecords = Attendance::where('user_id', $user->id)
+            ->whereBetween('attendance_date', [today()->startOfMonth(), today()->endOfMonth()])
+            ->get();
+        $completed = $records->filter(fn ($record) => $record->check_in_time && $record->check_out_time);
+        $workingMinutes = $completed->map(fn ($record) => Carbon::parse($record->check_in_time)->diffInMinutes(Carbon::parse($record->check_out_time)));
+        $monthStart = today()->startOfMonth();
+
+        $weekdaysElapsed = collect(range(0, today()->diffInDays($monthStart)))
+        ->filter(fn ($day) => !$monthStart->copy()->addDays($day)->isWeekend())
+        ->count();
+        // $weekdaysElapsed = collect(range(0, today()->diffInDays($monthStart)))->filter(fn ($day) => !$monthStart->copy()->addDays($day)->isWeekend())->count();
+        $expectedArrival = AttendanceSetting::first()?->expected_arrival_time;
+        // $monthRecords = $records->filter(fn ($record) => $record->attendance_date->isCurrentMonth());
+        // $onTimeCount = $monthRecords->filter(fn ($record) => $expectedArrival && $record->check_in_time && Carbon::parse($record->check_in_time)->format('H:i') <= Carbon::parse($expectedArrival)->format('H:i'))->count();
+        $onTimeCount = $monthRecords->filter(fn ($record) => 
+        $expectedArrival && 
+        $record->check_in_time && 
+        Carbon::parse($record->check_in_time)->format('H:i') <= Carbon::parse($expectedArrival)->format('H:i')
+        )->count();
+
+        return view('staff.dashboard', [
+            'attendance' => $attendance,
+            'records' => $records,
+            'stats' => [
+                'today_minutes' => $attendance?->check_in_time && $attendance?->check_out_time ? Carbon::parse($attendance->check_in_time)->diffInMinutes(Carbon::parse($attendance->check_out_time)) : 0,
+                'average_minutes' => $workingMinutes->count() ? round($workingMinutes->avg()) : 0,
+                'attendance_rate' => $weekdaysElapsed ? min(100, round(($monthRecords->count() / $weekdaysElapsed) * 100)) : 0,
+                'on_time_rate' => $monthRecords->count() ? round(($onTimeCount / $monthRecords->count()) * 100) : 0,
+            ],
+        ]);
     })->middleware('role:staff')->name('staff.dashboard');
 
     Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.check-in');

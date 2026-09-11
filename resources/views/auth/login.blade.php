@@ -19,7 +19,7 @@
         <!-- Logo / Header -->
         <div class="text-center mb-8">
 
-            <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-orange-600
+            <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-yellow-600
                         flex items-center justify-center shadow-lg">
 
                 <svg
@@ -102,7 +102,7 @@
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                     stroke-width="2"
-                                    d="M16 12H8m8-4H8m12 4a8 8 0 11-16 0 8 8 0 0116 0z"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                                 />
                             </svg>
 
@@ -163,7 +163,7 @@
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                     stroke-width="2"
-                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-5a2 2 0 00-2-2H6a2 2 0 00-2 2v5a2 2 0 002 2h12a2 2 0 002-2v-5a2 2 0 00-2-2zm-2-9V7a4 4 0 00-8 0v3h8z"
+                                    d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z"
                                 />
                             </svg>
 
@@ -202,7 +202,7 @@
                     type="submit"
                     id="loginButton"
                     class="w-full py-3 px-4 rounded-lg
-                           bg-orange-600 hover:bg-orange-700
+                           bg-yellow-600 hover:bg-orange-700
                            active:bg-orange-800
                            text-white font-semibold
                            shadow-sm transition duration-200

@@ -57,7 +57,7 @@
                         <button
                             type="button"
                             onclick="openStaffModal()"
-                            class="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                            class="inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
                         >
                             <svg
                                 class="h-4 w-4"
@@ -480,7 +480,7 @@
                 <button
                     type="submit"
                     id="registerStaffBtn"
-                    class="w-full bg-blue-600 text-white py-2.5 rounded-lg mt-5"
+                    class="w-full bg-yellow-600 text-white py-2.5 rounded-lg mt-5"
                 >
                     Send Invitation
                 </button>
@@ -546,7 +546,7 @@
                     type="button"
                     onclick="saveOfficeLocation()"
                     id="saveLocationButton"
-                    class="px-4 py-2 rounded-lg bg-blue-700 text-white"
+                    class="px-4 py-2 rounded-lg bg-yellow-700 text-white"
                 >
                     Save
                 </button>

@@ -6,10 +6,12 @@ use App\Models\Attendance;
 use App\Models\OfficeLocation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 
 class AttendanceController extends Controller
 {
+    
     public function checkIn(Request $request)
     {
         $data = $request->validate([
@@ -76,6 +78,7 @@ class AttendanceController extends Controller
             'latitude' => $latitude,
             'longitude' => $longitude,
             'distance' => $distance,
+            'sign_in_location' => $this->reverseGeocode($latitude, $longitude, $office->office_name),
             'status' => 'present',
         ]);
 
@@ -90,6 +93,7 @@ class AttendanceController extends Controller
                 )->format('h:i A'),
                 'work_duration' => $attendance->work_duration,
                 'status' => $attendance->status,
+                'location' => $attendance->sign_in_location,
             ],
         ], 201);
     }
@@ -119,6 +123,7 @@ class AttendanceController extends Controller
         )
         ->whereDate('attendance_date', $today)
         ->first();
+        
 
         // if not signed in cannot be signed out, its prevented by this code.
         if (!$attendance) {
@@ -136,7 +141,6 @@ class AttendanceController extends Controller
             ], 409);
         }
 
-        // calculate distance from office
         $distance = $this->calculateDistance(
             $latitude,
             $longitude,
@@ -144,7 +148,6 @@ class AttendanceController extends Controller
             $office->longitude
         );
 
-        // check if staff is within the staff area.
         if ($distance > $office->allowed_radius) {
             return response()->json([
                 'success' => false,
@@ -159,9 +162,16 @@ class AttendanceController extends Controller
             'check_out_latitude' => $latitude,
             'check_out_longitude' => $longitude,
             'check_out_distance' => $distance,
+            'sign_out_location' => $this->reverseGeocode($latitude, $longitude, $office->office_name),
         ]);
 
         $attendance->refresh();
+
+        // $data = [
+        //     "user attendance" => $attendance,
+        // ];
+
+        // dd($data);
 
         return response()->json([
             'success' => true,
@@ -174,6 +184,7 @@ class AttendanceController extends Controller
                 )->format('h:i A'),
                 'work_duration' => $attendance->work_duration,
                 'status' => $attendance->status,
+                'location' => $attendance->sign_out_location,
             ],
         ]);
     }
@@ -225,5 +236,28 @@ class AttendanceController extends Controller
         );
 
         return $earthRadius * $c;
+    }
+
+    private function reverseGeocode(float $latitude, float $longitude, ?string $fallback = null): string
+    {
+        try {
+            $response = Http::acceptJson()
+                ->withHeaders(['User-Agent' => 'StaffFlow Attendance/1.0'])
+                ->timeout(3)
+                ->get('https://nominatim.openstreetmap.org/reverse', [
+                    'lat' => $latitude,
+                    'lon' => $longitude,
+                    'format' => 'jsonv2',
+                    'zoom' => 18,
+                ]);
+
+            if ($response->successful() && $response->json('display_name')) {
+                return $response->json('display_name');
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+
+        return $fallback ?: 'Location unavailable';
     }
 }

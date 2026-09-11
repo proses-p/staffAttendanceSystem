@@ -21,6 +21,8 @@ class Attendance extends Model
         'check_out_latitude',
         'check_out_longitude',
         'check_out_distance',
+        'sign_in_location',
+        'sign_out_location',
     ];
 
     public function casts(): array {
