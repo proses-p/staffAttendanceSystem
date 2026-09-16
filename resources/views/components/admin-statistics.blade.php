@@ -6,11 +6,21 @@
     $notSignedInWidth = $totalStaff > 0 ? ($notSignedIn / $totalStaff) * 100 : 0;
     $onTimeAngle = min(360, $onTimeWidth * 3.6);
     $signedInAngle = min(360, $coveragePercent * 3.6);
+    $trendDays = collect(range(13, 0))->map(function ($daysAgo) use ($today, $attendanceTrend) {
+        $date = $today->copy()->subDays($daysAgo);
+        $record = $attendanceTrend->get($date->format('Y-m-d'));
+
+        return [
+            'label' => $date->format('d M'),
+            'count' => (int) ($record?->total ?? 0),
+        ];
+    });
+    $trendMax = max(1, $trendDays->max('count'));
 @endphp
 
-<div class="space-y-6">
+<div class="space-y-7">
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl bg-slate-950 p-5 text-white shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
+        <div class="rounded-2xl bg-slate-950 p-5 text-white shadow-[0_16px_32px_rgba(15,23,42,0.14)]">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-300">Total staff</p>
                 <span class="rounded-lg bg-white/10 p-2 text-slate-200">
@@ -54,6 +64,38 @@
             <p class="mt-1 text-xs text-slate-400">{{ $late }} late · {{ $notSignedIn }} not signed in</p>
         </div>
     </div>
+
+    <!-- <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">Attendance activity</p>
+                <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-950">Daily attendance trend</h2>
+                <p class="mt-1 text-sm text-slate-500">Check-ins recorded over the last 14 days.</p>
+            </div>
+            <span class="inline-flex w-fit items-center gap-2 rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">
+                <span class="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
+                Live data
+            </span>
+        </div>
+
+        <div class="mt-7 overflow-x-auto pb-1">
+            <div class="flex h-56 min-w-[620px] items-end gap-2 sm:gap-3">
+                @foreach ($trendDays as $day)
+                    <div class="flex h-full min-w-8 flex-1 flex-col items-center justify-end gap-2 sm:min-w-10">
+                        <span class="text-xs font-semibold text-slate-700">{{ $day['count'] }}</span>
+                        <div class="flex h-40 w-full items-end rounded-lg bg-slate-50">
+                            <div
+                                class="w-full rounded-lg bg-gradient-to-t from-[#d14a3c] to-[#ed8b30] shadow-sm transition hover:from-[#b83d33] hover:to-[#df7625]"
+                                style="height: {{ max($day['count'] > 0 ? 12 : 4, ($day['count'] / $trendMax) * 100) }}%"
+                                title="{{ $day['label'] }}: {{ $day['count'] }} attendance {{ $day['count'] === 1 ? 'record' : 'records' }}"
+                            ></div>
+                        </div>
+                        <span class="text-[10px] font-medium text-slate-400 sm:text-xs">{{ $day['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section> -->
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceSetting;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
@@ -23,7 +24,10 @@ class AdminStatistics extends Component
     public string $latePercent;
     public string $notSignedInPercent;
 
-    public function __construct()
+    public function __construct(
+        public Carbon $today,
+        public Collection $attendanceTrend,
+    )
     {
         // Total staff
         $this->totalStaff = User::where('role', 'staff')->count();

@@ -8,6 +8,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceSettingController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\PdfDevelopmentController;
 use App\Mail\NearOfficeMail;
 use App\Models\Attendance;
 use App\Models\AttendanceSetting;
@@ -44,6 +45,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/time-settings', [AttendanceSettingController::class, 'index'])->name('admin.time-settings.index');
         Route::post('/admin/time-settings', [AttendanceSettingController::class, 'store'])->name('admin.time-settings.store');
         Route::post('/admin/invitations', [StaffInvitationController::class, 'store'])->name('admin.invitations.store');
+        Route::get('/admin/attendance/report', [PdfDevelopmentController::class, 'download'])->name('admin.attendance.report');
     });
 
     // staff dashboard routes
