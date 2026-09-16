@@ -26,7 +26,7 @@
 
             <div>
                 <p class="text-sm font-semibold tracking-tight text-slate-950">
-                    sssss
+                    Staff Flow
                 </p>
 
                 <p class="text-xs text-slate-500">
