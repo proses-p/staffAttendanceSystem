@@ -21,9 +21,28 @@
 
     <div class="min-h-screen flex flex-col lg:flex-row">
 
+        <button
+            type="button"
+            id="openSidebarButton"
+            aria-controls="adminSidebar"
+            aria-expanded="false"
+            onclick="openSidebar()"
+            class="fixed left-4 top-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-700 shadow-sm lg:hidden"
+        >
+            <span aria-hidden="true">☰</span>
+            <span class="sr-only">Open navigation</span>
+        </button>
+
+        <div
+            id="sidebarOverlay"
+            onclick="closeSidebar()"
+            class="fixed inset-0 z-40 hidden bg-slate-950/40 lg:hidden"
+            aria-hidden="true"
+        ></div>
+
         @include('components.admin-sidebar')
 
-        <main class="flex-1 p-4 sm:p-6 lg:p-10">
+        <main class="relative flex-1 p-4 pt-20 sm:p-6 sm:pt-20 lg:p-10">
 
             <div class="mx-auto max-w-7xl">
 
@@ -57,7 +76,7 @@
                         <button
                             type="button"
                             onclick="openStaffModal()"
-                            class="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                            class="inline-flex items-center gap-2 rounded-xl bg-orange-400 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
                         >
                             <svg
                                 class="h-4 w-4"
@@ -163,7 +182,7 @@
 
                                 <thead class="border-b border-slate-200 bg-slate-50/80">
 
-                                    <tr class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                    <tr class="text-[11px] font-semibold uppercase tracking-[0.16em] text-white bg-orange-400">
 
                                         <th class="px-6 py-4">Staff name</th>
                                         <th class="px-6 py-4">Date</th>
@@ -480,7 +499,7 @@
                 <button
                     type="submit"
                     id="registerStaffBtn"
-                    class="w-full bg-blue-600 text-white py-2.5 rounded-lg mt-5"
+                    class="w-full bg-orange-400 text-white py-2.5 rounded-lg mt-5"
                 >
                     Send Invitation
                 </button>
@@ -500,6 +519,8 @@
     >
 
         <div class="bg-white w-full max-w-sm rounded-xl shadow-xl p-6">
+
+            
 
             <h2 class="text-lg font-semibold text-gray-900">
                 Save Office Location
@@ -546,7 +567,7 @@
                     type="button"
                     onclick="saveOfficeLocation()"
                     id="saveLocationButton"
-                    class="px-4 py-2 rounded-lg bg-blue-700 text-white"
+                    class="px-4 py-2 rounded-lg bg-orange-400 text-white"
                 >
                     Save
                 </button>
@@ -560,6 +581,35 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+
+    function openSidebar() {
+
+        const sidebar = document.getElementById('adminSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const openButton = document.getElementById('openSidebarButton');
+
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        overlay.classList.remove('hidden');
+        openButton.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('overflow-hidden');
+
+    }
+
+
+    function closeSidebar() {
+
+        const sidebar = document.getElementById('adminSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const openButton = document.getElementById('openSidebarButton');
+
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+        overlay.classList.add('hidden');
+        openButton.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('overflow-hidden');
+
+    }
 
     function showUsersView() {
 

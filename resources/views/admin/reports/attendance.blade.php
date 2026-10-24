@@ -57,7 +57,7 @@
 
     <div class="header">
         <h1>Attendance Report</h1>
-        <p>Dudumizi Staff Attendance System</p>
+        <p>Staff Attendance System</p>
     </div>
 
     <div class="period">

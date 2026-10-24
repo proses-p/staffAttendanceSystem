@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Staff invitation</title>
+    <title>Company invitation</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f6f8; font-family: Arial, sans-serif;">
     <div style="max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 10px; overflow: hidden;">
@@ -13,7 +13,7 @@
         <div style="padding: 35px 30px;">
             <h2>You have been invited to join the staff attendance system.</h2>
             <p style="font-size: 16px; line-height: 1.6;">
-                Complete your staff registration using the button below. This invitation expires in 24 hours.
+                Complete your company registration using the button below. This invitation expires in 24 hours.
             </p>
 
             <div style="text-align: center; margin: 30px 0;">

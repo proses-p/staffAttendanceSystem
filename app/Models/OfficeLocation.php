@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OfficeLocation extends Model
 {
@@ -13,11 +14,14 @@ class OfficeLocation extends Model
         'allowed_radius',
     ];
 
-
     protected $casts = [
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'allowed_radius' => 'integer',
-        ];
+    ];
 
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 }

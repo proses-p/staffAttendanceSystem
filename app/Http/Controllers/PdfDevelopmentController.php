@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Attendance;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class PdfDevelopmentController extends Controller
 {
-    public function download(Request $request) {
+    public function download(Request $request)
+    {
         // 1. filter the specific data from database
         // 2. combining the data into one place
         // 3. summary metric
@@ -16,6 +17,11 @@ class PdfDevelopmentController extends Controller
         $to = $request->input('to');
 
         $attendances = Attendance::with('user')
+            ->where('company_id', $request->user()->company_id)
+            ->whereHas('user', fn ($query) => $query->where(
+                'company_id',
+                $request->user()->company_id
+            ))
             ->whereBetween('attendance_date', [$from, $to])
             ->orderBy('attendance_date')
             ->get();

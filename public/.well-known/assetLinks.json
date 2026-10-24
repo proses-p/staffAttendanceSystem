@@ -1,0 +1,15 @@
+
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.staff_attendance_mobile",
+      "sha256_cert_fingerprints": [
+        "B8:EE:A0:68:0C:4E:F3:D1:B0:A2:E4:6F:5A:8F:95:16:CF:4E:AF:14:6C:70:B3:CE:27:F2:73:18:E7:6C:FF:F5"
+      ]
+    }
+  }
+]

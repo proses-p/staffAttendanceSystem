@@ -12,20 +12,25 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
+        $companyId = auth()->user()->company_id;
         $today = Carbon::today();
 
-        $staff = User::where('role', 'staff')
+        $staff = User::where('company_id', $companyId)
+            ->where('role', 'staff')
             ->where('is_active', true)
             ->with([
-                'attendances' => function ($query) use ($today) {
-                    $query->whereDate('attendance_date', $today);
-                }
+                'attendances' => function ($query) use ($today, $companyId) {
+                    $query->where('company_id', $companyId)
+                        ->whereDate('attendance_date', $today);
+                },
             ])
             ->get();
 
-        $officeLocation = OfficeLocation::first();
+        $officeLocation = OfficeLocation::where('company_id', $companyId)->first();
 
         $attendanceTrend = Attendance::query()
+            ->where('company_id', $companyId)
+            ->whereHas('user', fn ($query) => $query->where('company_id', $companyId))
             ->whereBetween('attendance_date', [$today->copy()->subDays(13), $today])
             ->select('attendance_date')
             ->selectRaw('COUNT(*) as total')

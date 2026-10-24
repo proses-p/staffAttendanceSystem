@@ -42,7 +42,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .brand-button {
-    background: var(--brand-red);
+    background: var(--brand-orange);
     box-shadow: 0 8px 18px rgba(226, 66, 55, .18);
 }
 

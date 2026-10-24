@@ -1,11 +1,24 @@
 
-<aside class="w-full shrink-0 border-b border-slate-200 bg-white lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r">
+<aside
+    id="adminSidebar"
+    class="w-full shrink-0 border-b border-slate-200 bg-white lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r @if (request()->routeIs('admin.dashboard')) fixed inset-y-0 left-0 z-50 h-screen w-64 -translate-x-full transition-transform duration-300 ease-out lg:static lg:inset-auto lg:z-auto lg:h-auto lg:translate-x-0 @endif"
+>
 
     <div class="flex h-full flex-col p-5 lg:p-6">
 
-        <!-- =========================
-             BRAND
-        ========================== -->
+        @if (request()->routeIs('admin.dashboard'))
+            <button
+                type="button"
+                aria-controls="adminSidebar"
+                aria-label="Close navigation"
+                onclick="closeSidebar()"
+                class="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-700 shadow-sm lg:hidden"
+            >
+                <span aria-hidden="true">&times;</span>
+            </button>
+        @endif
+
+        
         <div class="flex items-center gap-3">
 
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-cyan-400 shadow-sm">
@@ -26,7 +39,7 @@
 
             <div>
                 <p class="text-sm font-semibold tracking-tight text-slate-950">
-                    Staff Flow
+                    StaffFlow
                 </p>
 
                 <p class="text-xs text-slate-500">
@@ -163,7 +176,7 @@
                         />
                     </svg>
 
-                    <span>Time interval</span>
+                    <span>Attendance policy</span>
 
                 </a>
 

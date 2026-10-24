@@ -19,7 +19,7 @@
         <!-- Logo / Header -->
         <div class="text-center mb-8">
 
-            <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-yellow-600
+            <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-orange-400
                         flex items-center justify-center shadow-lg">
 
                 <svg
@@ -202,7 +202,7 @@
                     type="submit"
                     id="loginButton"
                     class="w-full py-3 px-4 rounded-lg
-                           bg-yellow-600 hover:bg-orange-700
+                           bg-orange-400 hover:bg-orange-700
                            active:bg-orange-800
                            text-white font-semibold
                            shadow-sm transition duration-200

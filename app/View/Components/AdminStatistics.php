@@ -29,17 +29,21 @@ class AdminStatistics extends Component
         public Collection $attendanceTrend,
     )
     {
+        $companyId = auth()->user()?->company_id;
+
         // Total staff
-        $this->totalStaff = User::where('role', 'staff')->count();
+        $this->totalStaff = User::where('company_id', $companyId)
+            ->where('role', 'staff')
+            ->count();
 
         // Today's attendance
         $todayAttendances = Attendance::whereDate(
             'attendance_date',
             Carbon::today()
-        )->get();
+        )->where('company_id', $companyId)->get();
 
         // Expected arrival time
-        $setting = AttendanceSetting::first();
+        $setting = AttendanceSetting::where('company_id', $companyId)->first();
 
         $this->isConfigured = $setting &&
             !empty($setting->expected_arrival_time);
@@ -92,7 +96,8 @@ class AdminStatistics extends Component
             ->pluck('user_id')
             ->unique();
 
-        $this->notSignedIn = User::where('role', 'staff')
+        $this->notSignedIn = User::where('company_id', $companyId)
+            ->where('role', 'staff')
             ->whereNotIn('id', $signedInStaffIds)
             ->count();
 

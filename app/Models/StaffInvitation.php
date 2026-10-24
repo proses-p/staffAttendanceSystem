@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StaffInvitation extends Model
 {
@@ -17,4 +18,9 @@ class StaffInvitation extends Model
         'expires_at' => 'datetime',
         'used_at' => 'datetime',
     ];
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 }

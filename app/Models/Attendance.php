@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Attendance extends Model
 {
@@ -25,7 +26,8 @@ class Attendance extends Model
         'sign_out_location',
     ];
 
-    public function casts(): array {
+    public function casts(): array
+    {
         return [
             'attendance_date' => 'date',
             'check_in_time' => 'datetime:H:i:s',
@@ -39,23 +41,67 @@ class Attendance extends Model
         ];
     }
 
-    public function user() {
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function user(): BelongsTo
+    {
         return $this->belongsTo(User::class);
+    }
+
+    public function getCheckInAtAttribute(): ?Carbon
+    {
+        return $this->timestampFor('check_in_time');
+    }
+
+    public function getCheckOutAtAttribute(): ?Carbon
+    {
+        $checkOutAt = $this->timestampFor('check_out_time');
+        $checkInAt = $this->check_in_at;
+
+        if (! $checkOutAt || ! $checkInAt) {
+            return $checkOutAt;
+        }
+
+        if ($checkOutAt->lt($checkInAt)) {
+            $checkOutAt->addDay();
+        }
+
+        return $checkOutAt;
     }
 
     public function getWorkDurationAttribute(): ?string
     {
-        if (!$this->check_in_time || !$this->check_out_time) {
+        $checkInAt = $this->check_in_at;
+        $checkOutAt = $this->check_out_at;
+
+        if (! $checkInAt || ! $checkOutAt) {
             return null;
         }
 
-        $workMinutes = Carbon::parse($this->check_in_time)
-            ->diffInMinutes(Carbon::parse($this->check_out_time));
+        $workMinutes = (int) $checkInAt->diffInMinutes($checkOutAt);
 
         return sprintf(
-            '%d hours %d minutes',
+            '%02dh %02dm',
             intdiv($workMinutes, 60),
             $workMinutes % 60
+        );
+    }
+
+    private function timestampFor(string $column): ?Carbon
+    {
+        $time = $this->getRawOriginal($column);
+        $date = $this->getRawOriginal('attendance_date');
+
+        if (! $time || ! $date) {
+            return null;
+        }
+
+        return Carbon::parse(
+            Carbon::parse($date)->toDateString().' '.$time,
+            config('app.timezone')
         );
     }
 }

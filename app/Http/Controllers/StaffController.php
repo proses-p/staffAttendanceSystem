@@ -2,24 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\StaffInvitation;
 use App\Models\OfficeLocation;
+use App\Models\StaffInvitation;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class StaffController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $staff = User::where('role', 'staff')
+        $staff = User::where('company_id', $request->user()->company_id)
+            ->where('role', 'staff')
             ->latest()
             ->paginate(10);
+
         return view('admin.staff.index', compact('staff'));
     }
 
@@ -43,15 +45,17 @@ class StaffController extends Controller
             'employee_id' => ['nullable', 'string', 'max:100', 'unique:users,employee_id'],
             'password' => ['required', 'confirmed'],
         ]);
-        $staff = User::create([
+        $staff = new User([
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'employee_id' => $data['employee_id'] ?? null,
             'password' => Hash::make($data['password']),
-            'role' => 'staff',
             'is_active' => true,
-         ]);
+        ]);
+        $staff->company_id = $request->user()->company_id;
+        $staff->role = 'staff';
+        $staff->save();
 
         return response()->json([
             'success' => true,
@@ -63,15 +67,20 @@ class StaffController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $staff)
+    public function show(Request $request, User $staff)
     {
-        abort_unless($staff->role === 'staff', 404);
+        abort_unless(
+            $staff->role === 'staff' &&
+                (int) $staff->company_id === (int) $request->user()->company_id,
+            404
+        );
 
         $attendance = $staff->attendances()
+            ->where('company_id', $request->user()->company_id)
             ->orderByDesc('attendance_date')
             ->orderByDesc('check_in_time')
             ->first();
-        $officeLocation = OfficeLocation::first();
+        $officeLocation = OfficeLocation::where('company_id', $request->user()->company_id)->first();
 
         return view('admin.staff.show', compact('staff', 'attendance', 'officeLocation'));
     }
@@ -79,9 +88,13 @@ class StaffController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(User $staff)
+    public function edit(Request $request, User $staff)
     {
-        abort_unless($staff->role === 'staff', 404);
+        abort_unless(
+            $staff->role === 'staff' &&
+                (int) $staff->company_id === (int) $request->user()->company_id,
+            404
+        );
 
         return view('admin.staff.edit', compact('staff'));
     }
@@ -91,7 +104,11 @@ class StaffController extends Controller
      */
     public function update(Request $request, User $staff)
     {
-        abort_unless($staff->role === 'staff', 404);
+        abort_unless(
+            $staff->role === 'staff' &&
+                (int) $staff->company_id === (int) $request->user()->company_id,
+            404
+        );
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -111,7 +128,7 @@ class StaffController extends Controller
         }
 
         return redirect()
-            ->to(route('admin.dashboard') . '#users')
+            ->to(route('admin.dashboard').'#users')
             ->with('success', 'Staff member updated successfully.');
     }
 
@@ -120,23 +137,29 @@ class StaffController extends Controller
      */
     public function destroy(User $staff)
     {
-        abort_unless($staff->role === 'staff', 404);
+        abort_unless(
+            $staff->role === 'staff' &&
+                (int) $staff->company_id === (int) auth()->user()->company_id,
+            404
+        );
 
         try {
             DB::transaction(function () use ($staff) {
-                StaffInvitation::where('email', $staff->email)->delete();
+                StaffInvitation::where('company_id', auth()->user()->company_id)
+                    ->where('email', $staff->email)
+                    ->delete();
                 $staff->delete();
             });
         } catch (\Throwable $exception) {
             report($exception);
 
             return redirect()
-                ->to(route('admin.dashboard') . '#users')
+                ->to(route('admin.dashboard').'#users')
                 ->with('error', 'Unable to delete this staff member.');
         }
 
         return redirect()
-            ->to(route('admin.dashboard') . '#users')
+            ->to(route('admin.dashboard').'#users')
             ->with('success', 'Staff member deleted successfully.');
     }
 }

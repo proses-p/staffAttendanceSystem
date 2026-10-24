@@ -23,13 +23,13 @@ class StaffSeeder extends Seeder
             'is_active' => true
         ],
 
-        [
-            'name' => 'john',
-            'email' => 'john2@gmail.com',
-            'password' => Hash::make('1234'),
-            'role' => 'staff',
-            'is_active' => true
-        ],
+        // [
+        //     'name' => 'john',
+        //     'email' => 'john2@gmail.com',
+        //     'password' => Hash::make('1234'),
+        //     'role' => 'staff',
+        //     'is_active' => true
+        // ],
 
         );
     }

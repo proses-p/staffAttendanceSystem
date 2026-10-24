@@ -18,8 +18,14 @@
     <div class="mx-auto min-h-screen max-w-[1500px] px-3 py-3 sm:px-6 sm:py-4 lg:px-8 2xl:max-w-[1800px]">
         <header class="mb-5 flex min-w-0 items-center justify-between gap-3 sm:mb-6 sm:gap-4">
             <div class="flex min-w-0 items-center gap-3">
-                <div class="brand-mark flex h-11 w-11 items-center justify-center rounded-2xl text-white"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M12 7v5l3 2" /></svg></div>
-                <div class="min-w-0"><p class="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">StaffFlow</p><p class="truncate text-sm text-slate-500">Attendance workspace</p></div>
+                <div class="brand-mark flex h-11 w-11 items-center justify-center rounded-2xl text-white">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M12 7v5l3 2" /></svg>
+                    </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-orange-600">StaffFlow</p>
+                    <p class="truncate text-sm text-slate-500">Attendance workspace</p>
+                </div>
             </div>
             <details class="relative">
                 <summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-sm transition hover:bg-slate-50 sm:gap-3 sm:px-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><span class="hidden min-w-0 text-left sm:block"><span class="block max-w-[9rem] truncate text-sm font-semibold">{{ auth()->user()->name }}</span><span class="block text-xs text-slate-500">Staff member</span></span><svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg></summary>
@@ -29,7 +35,20 @@
 
         <main>
             <section class="mb-6 grid gap-4 lg:grid-cols-[1.35fr_.65fr]">
-                <div class="hero-panel min-w-0 overflow-hidden rounded-3xl p-5 text-white shadow-xl sm:p-8"><div class="relative z-10 flex h-full flex-col justify-between gap-7 sm:gap-8"><div><p class="text-sm font-semibold text-orange-100">{{ now()->format('l, d F Y') }}</p><h1 class="mt-3 max-w-xl break-words text-2xl font-bold tracking-tight sm:text-4xl">Good day, {{ auth()->user()->name }}.</h1><p class="mt-3 max-w-lg text-sm leading-6 text-white/75">Keep your attendance record complete and your workday easy to understand.</p></div><div class="flex flex-wrap items-end justify-between gap-3 sm:gap-4"><div><p class="text-xs font-semibold uppercase tracking-widest text-white/60">Current time</p><p id="live-clock" class="mt-1 text-2xl font-semibold tabular-nums sm:text-3xl">{{ now()->format('h:i A') }}</p></div><span class="max-w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold">{{ $attendance ? 'Attendance in progress' : 'Ready to sign in' }}</span></div></div></div>
+                <div class="hero-panel min-w-0 overflow-hidden bg-orange-400 rounded-3xl p-5 text-white shadow-xl sm:p-8">
+                    <div class="relative z-10 flex h-full flex-col justify-between gap-7 sm:gap-8"><div>
+                        <p class="text-sm font-semibold text-white">{{ now()->format('l, d F Y') }}</p>
+                        <h1 class="mt-3 max-w-xl break-words text-2xl font-bold tracking-tight sm:text-4xl">Good day, {{ auth()->user()->name }}.</h1>
+                        <p class="mt-3 max-w-lg text-sm leading-6 text-white/75">Keep your attendance record complete and your workday easy to understand.</p>
+                    </div>
+                    <div class="flex flex-wrap items-end justify-between gap-3 sm:gap-4"><div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-white/60">Current time</p>
+                        <p id="live-clock" class="mt-1 text-2xl font-semibold tabular-nums sm:text-3xl">{{ now()->format('h:i A') }}</p>
+                    </div>
+                    <span class="max-w-full rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold">{{ $attendance ? 'Attendance in progress' : 'Ready to sign in' }}</span>
+                </div>
+            </div>
+        </div>
                 <div class="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-widest text-slate-400">Today</p><h2 class="mt-2 text-xl font-bold">Your workday</h2></div><span class="status-dot shrink-0 {{ $attendance?->check_out_time ? 'status-done' : ($attendance ? 'status-live' : 'status-idle') }}"></span></div><div class="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:gap-4"><div class="min-w-0"><p class="text-xs text-slate-500">Signed in</p><p class="mt-1 truncate text-base font-bold sm:text-lg">{{ $formatTime($attendance?->check_in_time) }}</p></div><div class="min-w-0"><p class="text-xs text-slate-500">Signed out</p><p class="mt-1 truncate text-base font-bold sm:text-lg">{{ $formatTime($attendance?->check_out_time) }}</p></div></div><div class="mt-5 border-t border-slate-100 pt-4 sm:mt-6"><p class="text-xs text-slate-500">Working hours</p><p class="mt-1 break-words text-xl font-bold text-orange-600 sm:text-2xl">{{ $attendance?->work_duration ?? 'Not finished' }}</p></div></div>
             </section>
 
@@ -58,8 +77,38 @@
             
 
             <section class="mb-6 grid min-w-0 gap-6 xl:grid-cols-[.95fr_1.05fr]">
-                <div class="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-xs font-bold uppercase tracking-widest text-orange-600">Attendance action</p><h2 class="mt-2 break-words text-xl font-bold sm:text-2xl">{{ $attendance ? ($attendance->check_out_time ? 'Day complete' : 'You are checked in') : 'Start your day' }}</h2></div><span class="shrink-0 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">{{ $attendance?->status ? ucfirst($attendance->status) : 'Pending' }}</span></div><p id="attendance-message" class="mt-3 text-sm leading-6 text-slate-500">{{ $attendance ? ($attendance->check_out_time ? 'Your attendance has been recorded for today.' : 'Remember to sign out when your workday is complete.') : 'We will verify your location before recording your sign in.' }}</p>
-                    @if (!$attendance)<button id="sign-in-button" type="button" class="brand-button mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M12 5v14m-7-7h14" /></svg>Sign in now</button>@elseif (!$attendance->check_out_time)<button id="sign-out-button" type="button" class="brand-button mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M5 12h14m-6-6 6 6-6 6" /></svg>Sign out</button>@else<div class="mt-6 flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100">✓</span>Complete for today</div>@endif
+                <div class="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold uppercase tracking-widest text-orange-600">Attendance action</p>
+                            <h2 class="mt-2 break-words text-xl font-bold sm:text-2xl">{{ $attendance ? ($attendance->check_out_time ? 'Day complete' : 'You are checked in') : 'Start your day' }}</h2>
+                        </div>
+                        <span class="shrink-0 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">{{ $attendance?->status ? ucfirst($attendance->status) : 'Pending' }}</span>
+                    </div>
+                    <p id="attendance-message" class="mt-3 text-sm leading-6 text-slate-500">{{ $attendance ? ($attendance->check_out_time ? 'Your attendance has been recorded for today.' : 'Remember to sign out when your workday is complete.') : 'We will verify your location before recording your sign in.' }}</p>
+                    @if (!$attendance)
+                    <button 
+                        id="sign-in-button" 
+                        type="button" 
+                        class="brand-button mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" d="M12 5v14m-7-7h14" />
+                        </svg>
+                        Sign in now
+                    </button>
+                    @elseif (!$attendance->check_out_time)
+                    <button id="sign-out-button" type="button" class="brand-button mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" d="M5 12h14m-6-6 6 6-6 6" />
+                        </svg>
+                        Sign out
+                    </button>
+                    @else
+                    <div class="mt-6 flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100">✓</span>
+                        Complete for today
+                    </div>
+                    @endif
                     <div id="location-message" class="mt-3"></div>
                 </div>
                 <div class="grid min-w-0 gap-4 sm:grid-cols-2">
@@ -73,7 +122,52 @@
                 @foreach ([['Working hours per day', 'hours-chart'], ['Sign-in time trend', 'signin-chart'], ['Sign-out time trend', 'signout-chart']] as [$title, $id])<div class="chart-panel min-w-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><h3 class="truncate text-sm font-bold">{{ $title }}</h3><div class="relative mt-4 h-40 w-full sm:h-44"><canvas id="{{ $id }}"></canvas></div></div>@endforeach
             </section>
 
-          <section class="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"><div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5"><div><p class="text-xs font-bold uppercase tracking-widest text-orange-600">Your records</p><h2 class="mt-1 text-xl font-bold">Attendance history</h2></div><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">{{ $records->count() }} records</span></div><div class="max-w-full overflow-x-auto"><table class="min-w-[980px] w-full text-left"><thead class="bg-slate-50 text-xs uppercase tracking-wider"><tr><th class="px-6 py-4 font-bold">Date</th><th class="px-4 py-4 font-bold">Sign in</th><th class="px-4 py-4 font-bold">Sign out</th><th class="px-4 py-4 font-bold">Working hours</th><th class="px-4 py-4 font-bold">Status</th><th class="px-4 py-4 font-bold">Sign-in location</th><th class="px-6 py-4 font-bold">Sign-out location</th></tr></thead><tbody class="divide-y divide-slate-100">@forelse ($records as $record)<tr class="table-row"><td class="px-6 py-4"><p class="text-sm font-bold">{{ $record->attendance_date->format('d M Y') }}</p><p class="text-xs text-slate-400">{{ $record->attendance_date->format('l') }}</p></td><td class="px-4 py-4 text-sm font-semibold">{{ $formatTime($record->check_in_time) }}</td><td class="px-4 py-4 text-sm font-semibold">{{ $formatTime($record->check_out_time) }}</td><td class="px-4 py-4 text-sm font-semibold">{{ $record->work_duration ?? 'In progress' }}</td><td class="px-4 py-4"><span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{{ ucfirst($record->status) }}</span></td><td class="max-w-[210px] break-words px-4 py-4 text-sm text-slate-600">{{ $record->sign_in_location ?? 'Unavailable' }}</td><td class="max-w-[210px] break-words px-6 py-4 text-sm text-slate-600">{{ $record->sign_out_location ?? '—' }}</td></tr>@empty<tr><td colspan="7" class="px-6 py-12 text-center text-sm text-slate-500">Your attendance history will appear here after your first sign in.</td></tr>@endforelse</tbody></table></div></section>
+          <section class="min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-orange-600">Your records</p>
+                    <h2 class="mt-1 text-xl font-bold">Attendance history</h2>
+                </div>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">{{ $records->count() }} records</span>
+            </div>
+            <div class="max-w-full overflow-x-auto">
+                <table class="min-w-[980px] w-full text-left">
+                    <thead class="bg-orange-400 text-xs uppercase tracking-wider">
+                        <tr>
+                            <th class="px-6 py-4 font-bold">Date</th>
+                            <th class="px-4 py-4 font-bold">Sign in</th>
+                            <th class="px-4 py-4 font-bold">Sign out</th>
+                            <th class="px-4 py-4 font-bold">Working hours</th>
+                            <th class="px-4 py-4 font-bold">Status</th>
+                            <th class="px-4 py-4 font-bold">Sign-in location</th>
+                            <th class="px-6 py-4 font-bold">Sign-out location</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse ($records as $record)
+                        <tr class="table-row">
+                            <td class="px-6 py-4">
+                                <p class="text-sm font-bold">{{ $record->attendance_date->format('d M Y') }}</p>
+                                <p class="text-xs text-slate-400">{{ $record->attendance_date->format('l') }}</p>
+                            </td>
+                            <td class="px-4 py-4 text-sm font-semibold">{{ $formatTime($record->check_in_time) }}</td>
+                            <td class="px-4 py-4 text-sm font-semibold">{{ $formatTime($record->check_out_time) }}</td>
+                            <td class="px-4 py-4 text-sm font-semibold">{{ $record->work_duration ?? 'In progress' }}</td>
+                            <td class="px-4 py-4">
+                                <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{{ ucfirst($record->status) }}</span>
+                            </td>
+                            <td class="max-w-[210px] break-words px-4 py-4 text-sm text-slate-600">{{ $record->sign_in_location ?? 'Unavailable' }}</td>
+                            <td class="max-w-[210px] break-words px-6 py-4 text-sm text-slate-600">{{ $record->sign_out_location ?? '—' }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-500">Your attendance history will appear here after your first sign in.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
             
             <div class="mt-4">
                 {{ $records->links() }}

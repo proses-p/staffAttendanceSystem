@@ -4,17 +4,20 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
-use App\Models\OfficeLocation;
+use App\Models\Company;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    public function showLoginForm() {
+    public function showLoginForm()
+    {
         return view('auth.login');
     }
-    public function login(Request $request) {
+
+    public function login(Request $request)
+    {
         $credentials = $request->validate([
             'email' => [
                 'required',
@@ -24,10 +27,10 @@ class LoginController extends Controller
                 'required',
                 'string',
             ],
-            
+
         ]);
 
-        if (!Auth::attempt($credentials)) {
+        if (! Auth::attempt($credentials)) {
             return back()->withErrors([
                 'email' => 'Invalid email or password',
             ])->onlyInput('email');
@@ -35,26 +38,39 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $user = Auth::user();
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             Auth::logout();
+
             return back()->withErrors([
                 'email' => 'Your account has been deactivated',
             ]);
         }
 
+        if (
+            $user->role !== 'super_admin' &&
+            (! $user->company || $user->company->status !== Company::STATUS_ACTIVE)
+        ) {
+            Auth::logout();
+
+            return back()->withErrors([
+                'email' => 'Your company is unavailable or has not been assigned. Contact your administrator.',
+            ]);
+        }
+
+        if ($user->role === 'super_admin') {
+            return redirect()->route('platform.companies.index');
+        }
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
+
         return redirect()->route('staff.dashboard');
-     }
+    }
 
-
-    public function logout(Request $request) {
+    public function logout(Request $request)
+    {
         // $user = Auth::user();
         // $currentAttendance = Attendance::where('user_id', $user->id)->orderByDesc('updated_at')->first();
-
-
-
 
         // $data = [
         //     "Current User"=>$user,
