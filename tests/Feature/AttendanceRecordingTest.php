@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Attendance;
 use App\Models\Company;
+use App\Models\StaffDevice;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,6 +17,8 @@ class AttendanceRecordingTest extends TestCase
     use RefreshDatabase;
 
     private Company $company;
+
+    private array $deviceKeys = [];
 
     protected function setUp(): void
     {
@@ -32,18 +35,19 @@ class AttendanceRecordingTest extends TestCase
             'longitude' => 0,
             'allowed_radius' => 100,
         ]);
-        Sanctum::actingAs($this->createCompanyUser());
+        $user = $this->createCompanyUser();
+        $this->registerTestDevice($user);
+        Sanctum::actingAs($user);
     }
 
     public function test_check_in_records_arrival_without_checkout_and_dashboard_shows_in_progress(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-17 08:15:00', 'Africa/Dar_es_salaam'));
 
-        $this->postJson('/api/v1/attendance/check-in', [
-            'latitude' => 0,
-            'longitude' => 0,
-            'accuracy' => 5,
-        ])->assertCreated()
+        $this->postJson(
+            '/api/v1/attendance/check-in',
+            $this->signedAttendancePayload('check-in')
+        )->assertCreated()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.attendance_state', 'in_progress')
             ->assertJsonPath('data.check_out_at', null);
@@ -83,11 +87,10 @@ class AttendanceRecordingTest extends TestCase
         $attendance->save();
 
         Carbon::setTestNow(Carbon::parse('2026-10-17 16:30:00', 'Africa/Dar_es_salaam'));
-        $this->postJson('/api/v1/attendance/check-out', [
-            'latitude' => 0,
-            'longitude' => 0,
-            'accuracy' => 5,
-        ])->assertOk()
+        $this->postJson(
+            '/api/v1/attendance/check-out',
+            $this->signedAttendancePayload('check-out')
+        )->assertOk()
             ->assertJsonPath('data.attendance_state', 'completed')
             ->assertJsonPath('data.work_duration', '08h 15m');
 
@@ -106,11 +109,10 @@ class AttendanceRecordingTest extends TestCase
             ->assertJsonPath('check_in_time', '08:15 AM')
             ->assertJsonPath('check_out_time', '04:30 PM');
 
-        $this->postJson('/api/v1/attendance/check-out', [
-            'latitude' => 0,
-            'longitude' => 0,
-            'accuracy' => 5,
-        ])->assertConflict();
+        $this->postJson(
+            '/api/v1/attendance/check-out',
+            $this->signedAttendancePayload('check-out')
+        )->assertConflict();
 
         $this->assertSame(1, Attendance::count());
         $this->assertSame('16:30:00', $attendance->fresh()->getRawOriginal('check_out_time'));
@@ -119,26 +121,63 @@ class AttendanceRecordingTest extends TestCase
     public function test_duplicate_check_in_is_rejected_and_out_of_geofence_check_in_is_not_recorded(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-17 08:15:00', 'Africa/Dar_es_salaam'));
-        $payload = [
-            'latitude' => 0,
-            'longitude' => 0,
-            'accuracy' => 5,
-        ];
-
-        $this->postJson('/api/v1/attendance/check-in', $payload)->assertCreated();
-        $this->postJson('/api/v1/attendance/check-in', $payload)->assertConflict();
+        $this->postJson(
+            '/api/v1/attendance/check-in',
+            $this->signedAttendancePayload('check-in')
+        )->assertCreated();
+        $this->postJson(
+            '/api/v1/attendance/check-in',
+            $this->signedAttendancePayload('check-in')
+        )->assertConflict();
 
         $this->assertSame(1, Attendance::count());
         $this->assertNull(Attendance::firstOrFail()->getRawOriginal('check_out_time'));
 
-        Sanctum::actingAs($this->createCompanyUser());
-        $this->postJson('/api/v1/attendance/check-in', [
-            'latitude' => 1,
-            'longitude' => 1,
-            'accuracy' => 5,
-        ])->assertForbidden();
+        $otherUser = $this->createCompanyUser();
+        $this->registerTestDevice($otherUser);
+        Sanctum::actingAs($otherUser);
+        $this->postJson(
+            '/api/v1/attendance/check-in',
+            $this->signedAttendancePayload('check-in', 1, 1)
+        )->assertForbidden();
 
         $this->assertSame(1, Attendance::count());
+    }
+
+    public function test_signed_attendance_rejects_modified_payload_replays_and_stale_locations(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-17 08:15:00', 'Africa/Dar_es_salaam'));
+        $modified = $this->signedAttendancePayload('check-in');
+        $modified['latitude'] = '0.0000001';
+        $this->postJson('/api/v1/attendance/check-in', $modified)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('signature');
+        $this->assertSame(0, Attendance::count());
+
+        $payload = $this->signedAttendancePayload('check-in');
+        $this->postJson('/api/v1/attendance/check-in', $payload)->assertCreated();
+        $this->postJson('/api/v1/attendance/check-in', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('challenge');
+        $this->assertSame(1, Attendance::count());
+
+        $stalePayload = $this->signedAttendancePayload('check-out');
+        $stalePayload['location_timestamp'] = '2026-10-17T04:00:00.000Z';
+        $this->postJson('/api/v1/attendance/check-out', $stalePayload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('location_timestamp');
+    }
+
+    public function test_attendance_rejects_location_accuracy_over_thirty_metres(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-17 08:15:00', 'Africa/Dar_es_salaam'));
+        $payload = $this->signedAttendancePayload('check-in');
+        $payload['accuracy'] = '30.01';
+
+        $this->postJson('/api/v1/attendance/check-in', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('accuracy');
+        $this->assertSame(0, Attendance::count());
     }
 
     public function test_attendance_history_is_paginated_newest_first_and_limited_to_the_authenticated_user(): void
@@ -272,6 +311,76 @@ class AttendanceRecordingTest extends TestCase
         $user->save();
 
         return $user;
+    }
+
+    private function registerTestDevice(User $user): void
+    {
+        $privateKey = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_EC,
+            'curve_name' => 'prime256v1',
+        ]);
+        $this->assertNotFalse($privateKey);
+        $details = openssl_pkey_get_details($privateKey);
+        $this->assertNotFalse($details);
+        $this->deviceKeys[$user->id] = $privateKey;
+
+        StaffDevice::create([
+            'user_id' => $user->id,
+            'platform' => 'android',
+            'public_key' => $details['key'],
+            'public_key_fingerprint' => hash('sha256', $details['key']),
+            'status' => 'active',
+            'approved_at' => now(),
+        ]);
+    }
+
+    private function signedAttendancePayload(
+        string $operation,
+        float $latitude = 0,
+        float $longitude = 0
+    ): array {
+        /** @var User $user */
+        $user = auth()->user();
+        $device = StaffDevice::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->firstOrFail();
+        $challenge = $this->postJson('/api/v1/attendance/challenges', [
+            'operation' => $operation,
+        ])->assertCreated()->json();
+        $accuracy = 5.0;
+        $latitudeText = number_format($latitude, 7, '.', '');
+        $longitudeText = number_format($longitude, 7, '.', '');
+        $accuracyText = number_format($accuracy, 2, '.', '');
+        $locationTimestamp = now('UTC')->format('Y-m-d\TH:i:s.v\Z');
+        $message = implode("\n", [
+            'attendance-v1',
+            (string) $challenge['challenge_id'],
+            $challenge['nonce'],
+            (string) $user->id,
+            (string) $device->id,
+            $operation,
+            $latitudeText,
+            $longitudeText,
+            $accuracyText,
+            $locationTimestamp,
+        ]);
+        $this->assertTrue(openssl_sign(
+            $message,
+            $signature,
+            $this->deviceKeys[$user->id],
+            OPENSSL_ALGO_SHA256
+        ));
+
+        return [
+            'latitude' => $latitudeText,
+            'longitude' => $longitudeText,
+            'accuracy' => $accuracyText,
+            'challenge_id' => $challenge['challenge_id'],
+            'device_id' => $device->id,
+            'location_timestamp' => $locationTimestamp,
+            'signature' => base64_encode($signature),
+        ];
     }
 
     protected function tearDown(): void

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,14 +40,11 @@ class AuthController extends Controller
             ], 403);
         }
 
-        if (
-            $user->role !== 'super_admin' &&
-            (! $user->company || $user->company->status !== Company::STATUS_ACTIVE)
-        ) {
+        if ($companyAccessMessage = $user->companyAccessMessage()) {
             Auth::logout();
 
             return response()->json([
-                'message' => 'Your company is unavailable or has not been assigned. Contact your administrator.',
+                'message' => $companyAccessMessage,
             ], 403);
         }
 

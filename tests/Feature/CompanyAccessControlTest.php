@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Attendance;
 use App\Models\Company;
+use App\Models\StaffDevice;
 use App\Models\StaffInvitation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,6 +15,8 @@ use Tests\TestCase;
 class CompanyAccessControlTest extends TestCase
 {
     use RefreshDatabase;
+
+    private array $devicePrivateKeys = [];
 
     private Company $company;
 
@@ -196,19 +199,18 @@ class CompanyAccessControlTest extends TestCase
             'longitude' => 0,
             'allowed_radius' => 100,
         ]);
+        $this->registerDevice($staff);
         Sanctum::actingAs($staff);
 
-        $this->postJson('/api/v1/attendance/check-in', [
-            'latitude' => 0,
-            'longitude' => 0,
-            'accuracy' => 5,
-        ])->assertForbidden();
+        $this->postJson(
+            '/api/v1/attendance/check-in',
+            $this->signedAttendancePayload($staff, 0, 0)
+        )->assertForbidden();
 
-        $this->postJson('/api/v1/attendance/check-in', [
-            'latitude' => 10,
-            'longitude' => 10,
-            'accuracy' => 5,
-        ])->assertCreated();
+        $this->postJson(
+            '/api/v1/attendance/check-in',
+            $this->signedAttendancePayload($staff, 10, 10)
+        )->assertCreated();
 
         $this->assertDatabaseHas('attendances', [
             'user_id' => $staff->id,
@@ -270,6 +272,29 @@ class CompanyAccessControlTest extends TestCase
         $this->assertNotNull($invitation->fresh()->used_at);
     }
 
+    public function test_staff_registration_can_complete_without_an_organization_value(): void
+    {
+        $invitation = $this->company->staffInvitations()->create([
+            'email' => 'invited-staff@example.test',
+            'token' => str_repeat('a', 64),
+            'expires_at' => now()->addDay(),
+        ]);
+
+        $this->postJson('/api/v1/staff/register', [
+            'token' => $invitation->token,
+            'name' => 'Invited Staff',
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertCreated()
+            ->assertJsonPath('user.email', 'invited-staff@example.test');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'invited-staff@example.test',
+            'organization' => null,
+            'company_id' => $this->company->id,
+        ]);
+    }
+
     private function createUser(Company $company, string $role): User
     {
         $user = User::factory()->create(['role' => $role]);
@@ -277,5 +302,70 @@ class CompanyAccessControlTest extends TestCase
         $user->save();
 
         return $user;
+    }
+
+    private function registerDevice(User $user): void
+    {
+        $privateKey = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_EC,
+            'curve_name' => 'prime256v1',
+        ]);
+        $this->assertNotFalse($privateKey);
+        $details = openssl_pkey_get_details($privateKey);
+        $this->assertNotFalse($details);
+        $this->devicePrivateKeys[$user->id] = $privateKey;
+
+        StaffDevice::create([
+            'user_id' => $user->id,
+            'platform' => 'android',
+            'public_key' => $details['key'],
+            'public_key_fingerprint' => hash('sha256', $details['key']),
+            'status' => 'active',
+            'approved_at' => now(),
+        ]);
+    }
+
+    private function signedAttendancePayload(User $user, float $latitude, float $longitude): array
+    {
+        $device = StaffDevice::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->firstOrFail();
+        $challenge = $this->postJson('/api/v1/attendance/challenges', [
+            'operation' => 'check-in',
+        ])->assertCreated()->json();
+        $accuracy = '5.00';
+        $latitudeText = number_format($latitude, 7, '.', '');
+        $longitudeText = number_format($longitude, 7, '.', '');
+        $timestamp = now('UTC')->format('Y-m-d\TH:i:s.v\Z');
+        $message = implode("\n", [
+            'attendance-v1',
+            (string) $challenge['challenge_id'],
+            $challenge['nonce'],
+            (string) $user->id,
+            (string) $device->id,
+            'check-in',
+            $latitudeText,
+            $longitudeText,
+            $accuracy,
+            $timestamp,
+        ]);
+        $signature = '';
+        $this->assertTrue(openssl_sign(
+            $message,
+            $signature,
+            $this->devicePrivateKeys[$user->id],
+            OPENSSL_ALGO_SHA256
+        ));
+
+        return [
+            'latitude' => $latitudeText,
+            'longitude' => $longitudeText,
+            'accuracy' => $accuracy,
+            'challenge_id' => $challenge['challenge_id'],
+            'device_id' => $device->id,
+            'location_timestamp' => $timestamp,
+            'signature' => base64_encode($signature),
+        ];
     }
 }

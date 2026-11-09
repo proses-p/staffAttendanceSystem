@@ -3,9 +3,6 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Attendance;
-use App\Models\Company;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -46,22 +43,22 @@ class LoginController extends Controller
             ]);
         }
 
-        if (
-            $user->role !== 'super_admin' &&
-            (! $user->company || $user->company->status !== Company::STATUS_ACTIVE)
-        ) {
+        if ($companyAccessMessage = $user->companyAccessMessage()) {
             Auth::logout();
 
             return back()->withErrors([
-                'email' => 'Your company is unavailable or has not been assigned. Contact your administrator.',
+                'email' => $companyAccessMessage,
             ]);
         }
 
         if ($user->role === 'super_admin') {
-            return redirect()->route('platform.companies.index');
+            return redirect()->route('platform.dashboard');
         }
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
+        }
+        if ($user->role === 'manager') {
+            return redirect()->route('admin.field-expenses.index');
         }
 
         return redirect()->route('staff.dashboard');

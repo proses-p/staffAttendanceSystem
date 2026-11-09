@@ -116,6 +116,28 @@
 
                 </a>
 
+                <a
+                    href="{{ route('admin.devices.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.devices.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <rect x="6" y="2.5" width="12" height="19" rx="2" />
+                        <path stroke-linecap="round" d="M10 18h4" />
+                    </svg>
+                    <span>Staff devices</span>
+                </a>
+
+                <a
+                    href="{{ route('admin.field-expenses.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.field-expenses.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13Z" />
+                        <path stroke-linecap="round" d="M7 8h10M7 12h4m-4 4h6" />
+                    </svg>
+                    <span>Field reimbursements</span>
+                </a>
+
 
                 <!-- Distance -->
                 <a

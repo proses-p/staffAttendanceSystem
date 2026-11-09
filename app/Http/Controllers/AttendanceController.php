@@ -8,6 +8,7 @@ use App\Models\AttendanceSetting;
 use App\Models\OfficeLocation;
 use App\Models\StaffLeaveRecord;
 use App\Models\User;
+use App\Services\StaffDeviceProofService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -22,8 +23,17 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'accuracy' => ['required', 'numeric', 'min:0'],
+            'accuracy' => ['required', 'numeric', 'min:0', 'max:30'],
+            'challenge_id' => ['required', 'integer', 'min:1'],
+            'device_id' => ['required', 'integer', 'min:1'],
+            'signature' => ['required', 'string', 'max:512'],
+            'location_timestamp' => ['required', 'string', 'size:24'],
         ]);
+        app(StaffDeviceProofService::class)->verifyAttendance(
+            $request->user(),
+            $data,
+            'check-in'
+        );
 
         $latitude = $data['latitude'];
         $longitude = $data['longitude'];
@@ -43,14 +53,6 @@ class AttendanceController extends Controller
         }
 
         $today = Carbon::today();
-        // $maxAccuracy = 100;
-        // if ($accuracy > $maxAccuracy) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Your location is not accurate enough.',
-        //         'accuracy' => round($accuracy, 2),
-        //     ], 422);
-        // }
         $existingAttendance = Attendance::where('user_id', $user->id)
             ->whereDate('attendance_date', $today)
             ->first();
@@ -122,8 +124,17 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'accuracy' => ['required', 'numeric', 'min:0'],
+            'accuracy' => ['required', 'numeric', 'min:0', 'max:30'],
+            'challenge_id' => ['required', 'integer', 'min:1'],
+            'device_id' => ['required', 'integer', 'min:1'],
+            'signature' => ['required', 'string', 'max:512'],
+            'location_timestamp' => ['required', 'string', 'size:24'],
         ]);
+        app(StaffDeviceProofService::class)->verifyAttendance(
+            $request->user(),
+            $data,
+            'check-out'
+        );
         $latitude = $data['latitude'];
         $longitude = $data['longitude'];
         $user = $request->user();

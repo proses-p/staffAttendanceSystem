@@ -9,7 +9,9 @@ use App\Models\StaffLeaveRecord;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AttendanceSettingController extends Controller
@@ -17,6 +19,9 @@ class AttendanceSettingController extends Controller
     public function index(Request $request): View
     {
         $companyId = $request->user()->company_id;
+        $filters = $request->validate([
+            'leave_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+        ]);
 
         return view('admin.time-settings', [
             'setting' => AttendanceSetting::where('company_id', $companyId)->first(),
@@ -28,8 +33,20 @@ class AttendanceSettingController extends Controller
                 ->where('company_id', $companyId)
                 ->whereHas('user', fn ($query) => $query->where('company_id', $companyId))
                 ->with('user:id,name,email')
-                ->orderByDesc('start_date')
-                ->get(),
+                ->when(
+                    $filters['leave_status'] ?? null,
+                    fn ($query, $status) => $query->where('status', $status)
+                )
+                ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+                ->orderByDesc('created_at')
+                ->paginate(20)
+                ->withQueryString(),
+            'leaveStatus' => $filters['leave_status'] ?? null,
+            'leaveCounts' => StaffLeaveRecord::query()
+                ->where('company_id', $companyId)
+                ->selectRaw('status, count(*) as aggregate')
+                ->groupBy('status')
+                ->pluck('aggregate', 'status'),
             'staff' => User::query()
                 ->where('company_id', $companyId)
                 ->where('role', 'staff')
@@ -123,6 +140,7 @@ class AttendanceSettingController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'status' => ['required', Rule::in(['pending', 'approved', 'rejected'])],
+            'reason' => ['nullable', 'string', 'max:2000'],
         ]);
 
         if ($data['status'] === 'approved' && $this->hasAttendance($data)) {
@@ -146,6 +164,8 @@ class AttendanceSettingController extends Controller
         }
 
         $data['recorded_by'] = $request->user()->id;
+        $data['leave_type'] = StaffLeaveRecord::TYPE_GENERIC;
+        $data['request_source'] = 'admin_record';
         $leaveRecord = new StaffLeaveRecord($data);
         $leaveRecord->company_id = $request->user()->company_id;
         $leaveRecord->save();
@@ -165,22 +185,37 @@ class AttendanceSettingController extends Controller
         );
 
         $data = $request->validate([
-            'status' => ['required', Rule::in(['pending', 'approved', 'rejected'])],
+            'status' => ['required', Rule::in(['approved', 'rejected'])],
+            'decision_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        if (
-            $data['status'] === 'approved' &&
-            $this->hasAttendance([
-                'user_id' => $leaveRecord->user_id,
-                'start_date' => $leaveRecord->start_date->toDateString(),
-                'end_date' => $leaveRecord->end_date->toDateString(),
-            ])
-        ) {
-            return back()
-                ->withErrors(['status' => 'Leave cannot be approved for dates that already have attendance records.']);
-        }
+        DB::transaction(function () use ($data, $leaveRecord): void {
+            $lockedLeave = StaffLeaveRecord::query()
+                ->whereKey($leaveRecord->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $leaveRecord->update($data);
+            if ($lockedLeave->status !== 'pending') {
+                throw ValidationException::withMessages([
+                    'status' => 'Only pending leave requests can be decided.',
+                ]);
+            }
+
+            if (
+                $data['status'] === 'approved' &&
+                $this->hasAttendance([
+                    'user_id' => $lockedLeave->user_id,
+                    'start_date' => $lockedLeave->start_date->toDateString(),
+                    'end_date' => $lockedLeave->end_date->toDateString(),
+                ])
+            ) {
+                throw ValidationException::withMessages([
+                    'status' => 'Leave cannot be approved for dates that already have attendance records.',
+                ]);
+            }
+
+            $lockedLeave->update($data);
+        });
 
         return redirect()
             ->route('admin.time-settings.index')

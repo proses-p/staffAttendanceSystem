@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        'field-expenses-private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/field-expenses'),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+            'report' => true,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

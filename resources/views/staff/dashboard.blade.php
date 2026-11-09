@@ -85,31 +85,17 @@
                         </div>
                         <span class="shrink-0 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">{{ $attendance?->status ? ucfirst($attendance->status) : 'Pending' }}</span>
                     </div>
-                    <p id="attendance-message" class="mt-3 text-sm leading-6 text-slate-500">{{ $attendance ? ($attendance->check_out_time ? 'Your attendance has been recorded for today.' : 'Remember to sign out when your workday is complete.') : 'We will verify your location before recording your sign in.' }}</p>
-                    @if (!$attendance)
-                    <button 
-                        id="sign-in-button" 
-                        type="button" 
-                        class="brand-button mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" d="M12 5v14m-7-7h14" />
-                        </svg>
-                        Sign in now
-                    </button>
-                    @elseif (!$attendance->check_out_time)
-                    <button id="sign-out-button" type="button" class="brand-button mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" d="M5 12h14m-6-6 6 6-6 6" />
-                        </svg>
-                        Sign out
-                    </button>
+                    <p id="attendance-message" class="mt-3 text-sm leading-6 text-slate-500">{{ $attendance ? ($attendance->check_out_time ? 'Your attendance has been recorded for today.' : 'Remember to sign out when your workday is complete.') : 'Attendance is protected by device-bound biometric signing.' }}</p>
+                    @if (!$attendance || !$attendance->check_out_time)
+                    <div class="mt-6 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm leading-6 text-orange-900">
+                        Use the Staff Attendance mobile app to check in or out. This web dashboard is read-only for staff attendance.
+                    </div>
                     @else
                     <div class="mt-6 flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
                         <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100">✓</span>
                         Complete for today
                     </div>
                     @endif
-                    <div id="location-message" class="mt-3"></div>
                 </div>
                 <div class="grid min-w-0 gap-4 sm:grid-cols-2">
                     @foreach ([['Sign-in location', $attendance?->sign_in_location, $attendance?->latitude, $attendance?->longitude, 'bg-orange-50', 'text-orange-600'], ['Sign-out location', $attendance?->sign_out_location, $attendance?->check_out_latitude, $attendance?->check_out_longitude, 'bg-emerald-50', 'text-emerald-600']] as [$label, $location, $latitude, $longitude, $bg, $color])
@@ -178,9 +164,6 @@
     </div>
 
     <script>
-        const csrfToken = '{{ csrf_token() }}';
-        const checkInUrl = '{{ route('attendance.check-in', [], false) }}';
-        const checkOutUrl = '{{ route('attendance.check-out', [], false) }}';
                 <?php
             $formattedRecords = $chartRecords->values()->map(fn ($record) => [
                 'date' => $record->attendance_date->format('d M'),
@@ -199,10 +182,6 @@
         createChart('signin-chart', chartRecords.map(record => timeToMinutes(record.signIn)), '#e98a3a', ' min');
         createChart('signout-chart', chartRecords.map(record => timeToMinutes(record.signOut)), '#2f9b72', ' min');
         setInterval(() => { document.getElementById('live-clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 1000);
-        const showLocationMessage = (title, description, tone = 'info') => { const target = document.getElementById('location-message'); target.innerHTML = `<div class="rounded-xl border px-4 py-3 text-sm ${tone === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-orange-200 bg-orange-50 text-orange-700'}"><strong>${title}</strong><p class="mt-1">${description}</p></div>`; };
-        const submitAttendance = (url, button) => { if (!navigator.geolocation) { showLocationMessage('Location unavailable', 'Your browser does not support location services.', 'error'); return; } button.disabled = true; button.textContent = 'Getting location...'; navigator.geolocation.getCurrentPosition(position => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }, body: JSON.stringify({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy }) }).then(async response => ({ status: response.status, data: await response.json() })).then(result => { if (result.data.success) { window.location.reload(); return; } button.disabled = false; button.textContent = url === checkInUrl ? 'Sign in now' : 'Sign out'; showLocationMessage('Unable to update attendance', result.data.message || 'Please try again.', 'error'); }).catch(() => { button.disabled = false; button.textContent = url === checkInUrl ? 'Sign in now' : 'Sign out'; showLocationMessage('Connection error', 'Unable to connect to the server. Please try again.', 'error'); }), () => { button.disabled = false; button.textContent = url === checkInUrl ? 'Sign in now' : 'Sign out'; showLocationMessage('Location permission required', 'Allow location access to record attendance.', 'error'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }); };
-        document.getElementById('sign-in-button')?.addEventListener('click', event => submitAttendance(checkInUrl, event.currentTarget));
-        document.getElementById('sign-out-button')?.addEventListener('click', event => submitAttendance(checkOutUrl, event.currentTarget));
     </script>
 </body>
 </html>

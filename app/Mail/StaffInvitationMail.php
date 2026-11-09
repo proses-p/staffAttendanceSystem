@@ -7,6 +7,8 @@ use Illuminate\Mail\Mailable;
 
 class StaffInvitationMail extends Mailable
 {
+    private const REGISTRATION_URL_BASE = 'https://taarifa.wadudu.co.tz';
+
     public function __construct(public StaffInvitation $invitation)
     {
     }
@@ -17,9 +19,14 @@ class StaffInvitationMail extends Mailable
             ->subject('You are invited to the Staff Attendance System')
             ->view('emails.staff-invitation')
             ->with([
-                'registrationUrl' => route('staff.register', [
-                    'token' => $this->invitation->token,
-                ]),
+                'registrationUrl' => self::REGISTRATION_URL_BASE.route(
+                    'staff.register',
+                    [
+                        'token' => $this->invitation->token,
+                        'email' => $this->invitation->email,
+                    ],
+                    false
+                ),
             ]);
     }
 }

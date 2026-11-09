@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Company;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,22 +31,18 @@ class EnsureActiveCompany
             return $next($request);
         }
 
-        $company = $user->company;
-        if (! $company || $company->status !== Company::STATUS_ACTIVE) {
+        if ($companyAccessMessage = $user->companyAccessMessage()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $company
-                        ? 'Your company account is suspended. Contact platform support.'
-                        : 'Your company assignment is missing. Contact your administrator.',
+                    'message' => $companyAccessMessage,
                 ], 403);
             }
 
-            abort(403, $company
-                ? 'Your company account is suspended. Contact platform support.'
-                : 'Your company assignment is missing. Contact your administrator.');
+            abort(403, $companyAccessMessage);
         }
 
+        $company = $user->company;
         $request->attributes->set('company', $company);
 
         return $next($request);

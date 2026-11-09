@@ -19,7 +19,7 @@ class StaffRegistrationController extends Controller
         $validator = Validator::make($request->all(), [
             'token' => ['required', 'string', 'size:64'],
             'name' => ['required', 'string', 'max:255'],
-            'organization' => ['required', 'string', 'max:255'],
+            'organization' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'employee_id' => ['nullable', 'string', 'max:100'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -83,7 +83,7 @@ class StaffRegistrationController extends Controller
             $user = $invitation->company->users()->make([
                 'name' => $data['name'],
                 'email' => $invitation->email,
-                'organization' => $data['organization'],
+                'organization' => $data['organization'] ?? null,
                 'phone' => $data['phone'] ?? null,
                 'employee_id' => $data['employee_id'] ?? null,
                 'password' => Hash::make($data['password']),

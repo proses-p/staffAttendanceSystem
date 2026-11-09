@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\FieldExpense;
 use App\Models\OfficeLocation;
 use App\Models\User;
 use Carbon\Carbon;
@@ -39,6 +40,17 @@ class AdminDashboardController extends Controller
             ->get()
             ->keyBy(fn ($attendance) => $attendance->attendance_date->format('Y-m-d'));
 
-        return view('admin.dashboard', compact('staff', 'today', 'officeLocation', 'attendanceTrend'));
+        $pendingFieldExpenses = FieldExpense::query()
+            ->where('status', FieldExpense::STATUS_PENDING)
+            ->whereHas('fieldAssignment', fn ($query) => $query->where('company_id', $companyId))
+            ->count();
+
+        return view('admin.dashboard', compact(
+            'staff',
+            'today',
+            'officeLocation',
+            'attendanceTrend',
+            'pendingFieldExpenses'
+        ));
     }
 }

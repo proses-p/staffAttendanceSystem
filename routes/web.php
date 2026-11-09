@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AttendanceReportController;
+use App\Http\Controllers\Admin\FieldExpenseReviewController;
 use App\Http\Controllers\Admin\OfficeLocationController;
+use App\Http\Controllers\Admin\StaffDeviceController as AdminStaffDeviceController;
 use App\Http\Controllers\Admin\StaffInvitationController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceSettingController;
@@ -25,10 +27,13 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
     if (auth()->user()->role === 'super_admin') {
-        return redirect()->route('platform.companies.index');
+        return redirect()->route('platform.dashboard');
     }
     if (auth()->user()->role === 'admin') {
         return redirect()->route('admin.dashboard');
+    }
+    if (auth()->user()->role === 'manager') {
+        return redirect()->route('admin.field-expenses.index');
     }
 
     return redirect()->route('staff.dashboard');
@@ -42,10 +47,12 @@ Route::match(['get', 'post'], '/staff/register/{token}', [StaffInvitationControl
 Route::middleware('auth')->group(function () {
     Route::prefix('platform')
         ->name('platform.')
-        ->middleware('role:super_admin')
+        ->middleware(['role:super_admin', 'company.active'])
         ->group(function () {
+            Route::get('/', [CompanyController::class, 'dashboard'])->name('dashboard');
             Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
             Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+            Route::get('/companies/{company}', [CompanyController::class, 'show'])->name('companies.show');
             Route::patch('/companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
             Route::post('/companies/{company}/admin-invitations', [CompanyController::class, 'inviteAdmin'])
                 ->name('companies.admin-invitations.store');
@@ -70,6 +77,29 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('/admin/staff', StaffController::class)->names('staff');
     });
+
+    Route::middleware(['role:admin', 'company.active'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/devices', [AdminStaffDeviceController::class, 'index'])->name('devices.index');
+        Route::post('/devices/{device}/approve', [AdminStaffDeviceController::class, 'approve'])->name('devices.approve');
+        Route::post('/devices/{device}/revoke', [AdminStaffDeviceController::class, 'revoke'])->name('devices.revoke');
+    });
+
+    Route::middleware(['can:admin-oversight', 'company.active'])
+        ->prefix('admin/field-expenses')
+        ->name('admin.field-expenses.')
+        ->group(function () {
+            Route::get('/', [FieldExpenseReviewController::class, 'index'])->name('index');
+            Route::get('/{expense}', [FieldExpenseReviewController::class, 'show'])->whereNumber('expense')->name('show');
+            Route::get('/{expense}/receipt', [FieldExpenseReviewController::class, 'receipt'])
+                ->whereNumber('expense')
+                ->name('receipt');
+            Route::post('/{expense}/approve', [FieldExpenseReviewController::class, 'approve'])
+                ->whereNumber('expense')
+                ->name('approve');
+            Route::post('/{expense}/reject', [FieldExpenseReviewController::class, 'reject'])
+                ->whereNumber('expense')
+                ->name('reject');
+        });
 
     // staff dashboard routes
     Route::middleware(['role:staff', 'company.active'])->group(function () {

@@ -138,6 +138,17 @@
 
                 <div id="dashboardView">
                     <x-admin-statistics :today="$today" :attendance-trend="$attendanceTrend" />
+                    <section class="mt-6 rounded-2xl border border-amber-200 bg-white p-5 shadow-sm sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Financial review</p>
+                            <h2 class="mt-1 text-xl font-semibold text-slate-950">Pending Field Reimbursements</h2>
+                            <p class="mt-1 text-sm text-slate-500">Review submitted staff expenses alongside assignment and GPS evidence.</p>
+                        </div>
+                        <div class="mt-4 flex items-center gap-4 sm:mt-0">
+                            <span class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-800">{{ number_format($pendingFieldExpenses) }} pending</span>
+                            <a href="{{ route('admin.field-expenses.index', ['status' => 'pending']) }}" class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Review claims</a>
+                        </div>
+                    </section>
                 </div>
 
 
@@ -1029,4 +1040,3 @@
 </body>
 
 </html>
-
