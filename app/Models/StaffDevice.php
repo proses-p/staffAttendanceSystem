@@ -11,6 +11,7 @@ class StaffDevice extends Model
         'user_id',
         'device_name',
         'platform',
+        'device_uuid',
         'public_key',
         'public_key_fingerprint',
         'status',

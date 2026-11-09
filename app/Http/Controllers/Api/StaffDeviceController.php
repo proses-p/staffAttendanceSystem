@@ -64,6 +64,7 @@ class StaffDeviceController extends Controller
         $validated = $request->validate([
             'device_name' => ['nullable', 'string', 'max:100'],
             'platform' => ['required', 'in:android'],
+            'device_uuid' => ['nullable', 'string', 'max:128'],
             'public_key' => ['required', 'string', 'max:10000'],
             'challenge_id' => ['required', 'integer', 'min:1'],
             'signature' => ['required', 'string', 'max:512'],
@@ -120,6 +121,7 @@ class StaffDeviceController extends Controller
                 'user_id' => $user->id,
                 'device_name' => $validated['device_name'] ?? null,
                 'platform' => $validated['platform'],
+                'device_uuid' => $validated['device_uuid'] ?? null,
                 'public_key' => $validated['public_key'],
                 'public_key_fingerprint' => $fingerprint,
                 'status' => 'pending',

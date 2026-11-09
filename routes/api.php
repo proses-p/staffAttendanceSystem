@@ -1,8 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\AdminFieldOperationsController;
 use App\Http\Controllers\Api\AdminFieldExpenseController;
+use App\Http\Controllers\Api\AdminFieldOperationsController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DeviceSecurityController;
 use App\Http\Controllers\Api\FaceEnrollmentController;
 use App\Http\Controllers\Api\FieldDashboardController;
 use App\Http\Controllers\Api\FieldExpenseController;
@@ -64,6 +65,8 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::post('/devices/enroll', [StaffDeviceController::class, 'enroll'])
             ->middleware(['role:staff', 'throttle:5,1']);
         Route::get('/devices/status', [StaffDeviceController::class, 'status'])->middleware('role:staff');
+        Route::post('/device/sync-recovered-key', [DeviceSecurityController::class, 'syncRecoveredKey'])
+            ->middleware(['role:staff', 'throttle:3,1']);
     });
 
     Route::middleware(['company.active', 'can:admin-oversight'])->prefix('admin')->group(function () {

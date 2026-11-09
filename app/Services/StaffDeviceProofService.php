@@ -287,9 +287,9 @@ class StaffDeviceProofService
             }
 
             $key = openssl_pkey_get_public($publicKey);
-            if (! $key instanceof OpenSSLAsymmetricKey || ! $this->isP256Key($key)) {
+            if (! $key instanceof OpenSSLAsymmetricKey || ! $this->isSupportedSigningKey($key)) {
                 throw ValidationException::withMessages([
-                    'public_key' => 'A valid P-256 public key is required.',
+                    'public_key' => 'A valid P-256 or RSA-2048 public key is required.',
                 ]);
             }
 
@@ -305,13 +305,18 @@ class StaffDeviceProofService
         });
     }
 
-    private function isP256Key(OpenSSLAsymmetricKey $key): bool
+    private function isSupportedSigningKey(OpenSSLAsymmetricKey $key): bool
     {
         $details = openssl_pkey_get_details($key);
 
-        return $details !== false
-            && ($details['type'] ?? null) === OPENSSL_KEYTYPE_EC
-            && ($details['ec']['curve_name'] ?? null) === 'prime256v1';
+        if ($details === false) {
+            return false;
+        }
+
+        return (($details['type'] ?? null) === OPENSSL_KEYTYPE_EC
+                && ($details['ec']['curve_name'] ?? null) === 'prime256v1')
+            || (($details['type'] ?? null) === OPENSSL_KEYTYPE_RSA
+                && ($details['bits'] ?? null) === 2048);
     }
 
     private function parseLocationTimestamp(string $timestamp): DateTimeImmutable
