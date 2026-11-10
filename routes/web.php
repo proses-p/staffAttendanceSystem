@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AttendanceReportController;
 use App\Http\Controllers\Admin\FieldExpenseReviewController;
+use App\Http\Controllers\Admin\LeaveManagementController;
 use App\Http\Controllers\Admin\OfficeLocationController;
 use App\Http\Controllers\Admin\StaffDeviceController as AdminStaffDeviceController;
 use App\Http\Controllers\Admin\StaffInvitationController;
@@ -69,8 +70,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/time-settings', [AttendanceSettingController::class, 'store'])->name('admin.time-settings.store');
         Route::post('/admin/holidays', [AttendanceSettingController::class, 'storeHoliday'])->name('admin.holidays.store');
         Route::delete('/admin/holidays/{holiday}', [AttendanceSettingController::class, 'destroyHoliday'])->name('admin.holidays.destroy');
-        Route::post('/admin/leave-records', [AttendanceSettingController::class, 'storeLeave'])->name('admin.leave-records.store');
-        Route::patch('/admin/leave-records/{leaveRecord}', [AttendanceSettingController::class, 'updateLeaveStatus'])->name('admin.leave-records.update');
+        Route::get('/admin/leaves', [LeaveManagementController::class, 'index'])->name('admin.leaves.index');
+        Route::post('/admin/leave-records', [LeaveManagementController::class, 'store'])->name('admin.leave-records.store');
+        Route::patch('/admin/leave-records/{leaveRecord}', [LeaveManagementController::class, 'update'])->name('admin.leave-records.update');
         Route::post('/admin/invitations', [StaffInvitationController::class, 'store'])->name('admin.invitations.store');
         Route::get('/admin/attendance/report', [PdfDevelopmentController::class, 'download'])->name('admin.attendance.report');
         // Route::get('/admin/attendance/search', [AdminSearchController::class, 'index'])->name('admin.attendance.search');

@@ -18,7 +18,7 @@
             </button>
         @endif
 
-        
+
         <div class="flex items-center gap-3">
 
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-cyan-400 shadow-sm">
@@ -176,7 +176,7 @@
                 <!-- Time Interval -->
                 <a
                     href="{{ route('admin.time-settings.index') }}"
-                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.time-settings.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 transition hover:bg-slate-50 hover:text-slate-950' }}"
                 >
 
                     <svg
@@ -200,6 +200,22 @@
 
                     <span>Attendance policy</span>
 
+                </a>
+
+                <a
+                    href="{{ route('admin.leaves.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.leaves.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 transition hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <rect x="3" y="5" width="18" height="16" rx="2" />
+                        <path stroke-linecap="round" d="M16 3v4M8 3v4M3 10h18" />
+                    </svg>
+                    <span class="flex-1">Manage Leaves</span>
+                    @if (($unreadLeaveCount ?? 0) > 0)
+                        <span class="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold leading-4 text-white" aria-label="{{ $unreadLeaveCount }} unread leave requests">
+                            {{ $unreadLeaveCount }}
+                        </span>
+                    @endif
                 </a>
 
 

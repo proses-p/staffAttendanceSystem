@@ -123,14 +123,29 @@ class LeaveManagementTest extends TestCase
         $this->actingAs($admin)
             ->get('/admin/time-settings')
             ->assertOk()
+            ->assertDontSee('View request details')
+            ->assertSee('2 unread leave requests');
+
+        $this->get(route('admin.leaves.index'))
+            ->assertOk()
             ->assertSee('Staff request')
             ->assertSee('View request details')
-            ->assertSee('Filter requests');
+            ->assertSee('Filter requests')
+            ->assertDontSee('2 unread leave requests');
+
+        $this->assertDatabaseHas('staff_leave_records', [
+            'id' => $approvedRequest->id,
+            'is_read' => true,
+        ]);
+        $this->assertDatabaseHas('staff_leave_records', [
+            'id' => $rejectedRequest->id,
+            'is_read' => true,
+        ]);
 
         $this->patch(route('admin.leave-records.update', $approvedRequest), [
             'status' => 'approved',
             'decision_note' => 'Approved by your manager.',
-        ])->assertRedirect(route('admin.time-settings.index'));
+        ])->assertRedirect(route('admin.leaves.index'));
 
         $this->assertDatabaseHas('staff_leave_records', [
             'id' => $approvedRequest->id,
@@ -145,7 +160,7 @@ class LeaveManagementTest extends TestCase
         $this->patch(route('admin.leave-records.update', $rejectedRequest), [
             'status' => 'rejected',
             'decision_note' => 'Please choose another date.',
-        ])->assertRedirect(route('admin.time-settings.index'));
+        ])->assertRedirect(route('admin.leaves.index'));
 
         $this->assertDatabaseHas('staff_leave_records', [
             'id' => $rejectedRequest->id,
@@ -206,7 +221,7 @@ class LeaveManagementTest extends TestCase
             ->patch(route('admin.leave-records.update', $rejectedRequest), [
                 'status' => 'rejected',
             ])
-            ->assertRedirect(route('admin.time-settings.index'));
+            ->assertRedirect(route('admin.leaves.index'));
 
         Sanctum::actingAs($staff);
         $this->postJson('/api/v1/leave-requests', [
@@ -230,7 +245,7 @@ class LeaveManagementTest extends TestCase
             ->patch(route('admin.leave-records.update', $pendingRequest), [
                 'status' => 'approved',
             ])
-            ->assertRedirect(route('admin.time-settings.index'));
+            ->assertRedirect(route('admin.leaves.index'));
 
         Sanctum::actingAs($staff);
         $this->getJson('/api/v1/dashboard')

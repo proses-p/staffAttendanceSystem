@@ -21,6 +21,7 @@ class StaffLeaveRecord extends Model
         'reason',
         'decision_note',
         'request_source',
+        'is_read',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class StaffLeaveRecord extends Model
         return [
             'start_date' => 'date',
             'end_date' => 'date',
+            'is_read' => 'boolean',
         ];
     }
 
