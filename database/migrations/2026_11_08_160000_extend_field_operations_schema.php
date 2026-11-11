@@ -11,10 +11,15 @@ return new class extends Migration
     {
         Schema::table('field_assignments', function (Blueprint $table) {
             // 1. Tengeneza column ya clock_out_at KWANZA ili iwepo kwenye table
+            $table->timestamp('clock_in_at')->nullable()->after('user_id');
+
             $table->timestamp('clock_out_at')->nullable();
 
             // 2. Sasa weka index kwa sababu columns zote (company_id, user_id, clock_out_at) zipo tayari
-            $table->index(['company_id', 'user_id', 'clock_out_at']);
+            $table->index(
+                ['company_id', 'user_id', 'clock_in_at', 'clock_out_at'],
+                'fa_company_user_clock_idx'
+            );
 
             $table->decimal('clock_in_lat', 10, 7)->nullable();
             $table->decimal('clock_in_lng', 10, 7)->nullable();
@@ -88,7 +93,7 @@ return new class extends Migration
             $table->dropForeign(['reviewed_by']);
             $table->dropUnique(['client_uuid']);
             $table->dropIndex(['is_flagged']);
-            $table->dropIndex(['company_id', 'user_id', 'clock_out_at']);
+            $table->dropIndex('fa_company_user_clock_idx');
             $table->dropColumn([
                 'clock_in_lat',
                 'clock_in_lng',
