@@ -20,6 +20,8 @@ use App\Models\AttendanceSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\File;
+
 
 Route::get('/', function () {
     // return redirect()->route('login');
@@ -44,6 +46,20 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.store');
 Route::match(['get', 'post'], '/staff/register/{token}', [StaffInvitationController::class, 'register'])->name('staff.register');
+
+
+Route::get('/.well-known/assetlinks.json', function () {
+    $path = public_path('.well-known/assetlinks.json');
+
+    if (!File::exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'application/json',
+    ]);
+});
+
 
 Route::middleware('auth')->group(function () {
     Route::prefix('platform')
