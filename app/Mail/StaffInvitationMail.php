@@ -7,7 +7,7 @@ use Illuminate\Mail\Mailable;
 
 class StaffInvitationMail extends Mailable
 {
-    private const REGISTRATION_URL_BASE = 'https://taarifa.wadudu.co.tz';
+    private const REGISTRATION_URL_BASE = 'https://app.taarifa.wadudu.co.tz';
 
     public function __construct(public StaffInvitation $invitation)
     {

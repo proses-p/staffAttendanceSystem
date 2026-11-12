@@ -21,7 +21,7 @@ class StaffInvitationMailTest extends TestCase
         $uri = parse_url($mail->viewData['registrationUrl']);
 
         $this->assertSame('https', $uri['scheme']);
-        $this->assertSame('taarifa.wadudu.co.tz', $uri['host']);
+        $this->assertSame('app.taarifa.wadudu.co.tz', $uri['host']);
         $this->assertSame("/staff/register/{$token}", $uri['path']);
         parse_str($uri['query'], $query);
         $this->assertSame($email, $query['email']);
