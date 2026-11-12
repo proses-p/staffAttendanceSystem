@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\StaffLeaveRecord;
+use App\Models\StaffNotification; 
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -101,6 +102,18 @@ class LeaveManagementController extends Controller
         $leaveRecord->company_id = $companyId;
         $leaveRecord->save();
 
+        // Kama Admin amerekodi likizo ya moja kwa moja kwa staff, mtumie taarifa pia
+        if ($data['status'] !== 'pending') {
+            $statusLabel = $data['status'] === 'approved' ? 'imeidhinishwa (Approved)' : 'imekataliwa (Rejected)';
+            StaffNotification::create([
+                'company_id' => $companyId,
+                'user_id' => $leaveRecord->user_id,
+                'title' => 'Taarifa ya Likizo Kutoka Uongozi',
+                'body' => "Likizo yako kuanzia {$data['start_date']} hadi {$data['end_date']} {$statusLabel}.",
+                'is_pushed' => false,
+            ]);
+        }
+
         return redirect()
             ->route('admin.leaves.index')
             ->with('success', 'Leave record added.');
@@ -143,6 +156,28 @@ class LeaveManagementController extends Controller
             }
 
             $lockedLeave->update($data);
+
+            // HAPA NDIPO NOTIFICATION INAPOTENGENEZWA KWA AJILI YA SIMU YA STAFF
+            $startDate = $lockedLeave->start_date->format('d M Y');
+            $endDate = $lockedLeave->end_date->format('d M Y');
+            $statusText = $data['status'] === 'approved'
+                ? 'APPROVED (Approved)'
+                : 'REJECTED (Rejected)';
+
+            $bodyMessage = "Your leave request ({$startDate} - {$endDate}) {$statusText}.";
+
+            // Kama Admin aliandika maelezo (decision_note), yaongeze kwenye ujumbe
+            if (!empty($data['decision_note'])) {
+                $bodyMessage .= " Description: {$data['decision_note']}";
+            }
+
+            StaffNotification::create([
+                'company_id' => $companyId,
+                'user_id' => $lockedLeave->user_id,
+                'title' => 'Your leave request update',
+                'body' => $bodyMessage,
+                'is_pushed' => false,
+            ]);
         });
 
         return redirect()

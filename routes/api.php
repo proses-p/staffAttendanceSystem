@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FieldDashboardController;
 use App\Http\Controllers\Api\FieldExpenseController;
 use App\Http\Controllers\Api\FieldOperationsController;
 use App\Http\Controllers\Api\LeaveRequestController;
+use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\StaffDeviceController;
 use App\Http\Controllers\Api\StaffRegistrationController;
@@ -28,6 +29,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::middleware(['company.active'])->group(function () {
+        Route::get('/notifications/unread', [NotificationApiController::class, 'fetchUnread']);
         Route::get('/user', [ProfileController::class, 'show']);
         Route::put('/user', [ProfileController::class, 'update']);
         Route::put('/user/password', [ProfileController::class, 'changePassword'])
