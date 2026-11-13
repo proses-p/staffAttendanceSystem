@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AttendanceSetting;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -17,6 +18,7 @@ class AttendanceReportController extends Controller
         $staff = User::where('company_id', $companyId)
             ->where('role', 'staff')
             ->where('is_active', true)
+            ->with('shift')
             ->with([
                 'attendances' => function ($query) use ($today, $companyId) {
                     $query->where('company_id', $companyId)
@@ -24,7 +26,8 @@ class AttendanceReportController extends Controller
                 },
             ])
             ->get();
+        $setting = AttendanceSetting::where('company_id', $companyId)->first();
 
-        return view('admin.attendance.index', compact('staff', 'today'));
+        return view('admin.attendance.index', compact('staff', 'today', 'setting'));
     }
 }

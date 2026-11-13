@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\FieldExpense;
 use App\Models\OfficeLocation;
+use App\Models\StaffInvitation;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -15,6 +16,11 @@ class AdminDashboardController extends Controller
     {
         $companyId = auth()->user()->company_id;
         $today = Carbon::today();
+
+        $invitations = StaffInvitation::query()
+            ->where('company_id', $companyId)
+            ->orderByDesc('created_at')
+            ->get();
 
         $staff = User::where('company_id', $companyId)
             ->where('role', 'staff')
@@ -50,7 +56,8 @@ class AdminDashboardController extends Controller
             'today',
             'officeLocation',
             'attendanceTrend',
-            'pendingFieldExpenses'
+            'pendingFieldExpenses',
+            'invitations'
         ));
     }
 }

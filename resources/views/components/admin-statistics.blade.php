@@ -1,9 +1,10 @@
 @php
+    $attendanceDenominator = $eligibleStaff;
     $signedIn = $onTime + $late;
-    $coveragePercent = $totalStaff > 0 ? number_format(($signedIn / $totalStaff) * 100, 1) : '0';
-    $onTimeWidth = $totalStaff > 0 ? ($onTime / $totalStaff) * 100 : 0;
-    $lateWidth = $totalStaff > 0 ? ($late / $totalStaff) * 100 : 0;
-    $notSignedInWidth = $totalStaff > 0 ? ($notSignedIn / $totalStaff) * 100 : 0;
+    $coveragePercent = $attendanceDenominator > 0 ? number_format(($signedIn / $attendanceDenominator) * 100, 1) : '0';
+    $onTimeWidth = $attendanceDenominator > 0 ? ($onTime / $attendanceDenominator) * 100 : 0;
+    $lateWidth = $attendanceDenominator > 0 ? ($late / $attendanceDenominator) * 100 : 0;
+    $notSignedInWidth = $attendanceDenominator > 0 ? ($notSignedIn / $attendanceDenominator) * 100 : 0;
     $onTimeAngle = min(360, $onTimeWidth * 3.6);
     $signedInAngle = min(360, $coveragePercent * 3.6);
     $trendDays = collect(range(13, 0))->map(function ($daysAgo) use ($today, $attendanceTrend) {
@@ -50,7 +51,7 @@
                 </span>
             </div>
             <p class="mt-5 text-3xl font-semibold tracking-tight text-slate-950">{{ $isConfigured ? $onTime : '—' }}</p>
-            <p class="mt-1 text-xs text-slate-400">{{ $isConfigured ? $onTimePercent . '% of staff' : 'Configure arrival time' }}</p>
+            <p class="mt-1 text-xs text-slate-400">{{ $isConfigured ? $onTimePercent . '% of scheduled staff' : 'Configure arrival time' }}</p>
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

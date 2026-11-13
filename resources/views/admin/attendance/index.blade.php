@@ -73,6 +73,17 @@
 
                         @php
                             $attendance = $member->attendances->first();
+                            $workingDays = $member->shift?->working_days ?? $setting?->working_days ?? [];
+                            $weekdayNumbers = [
+                                'monday' => 1, 'tuesday' => 2, 'wednesday' => 3,
+                                'thursday' => 4, 'friday' => 5, 'saturday' => 6, 'sunday' => 7,
+                            ];
+                            $workingDayNumbers = array_map(
+                                fn ($day) => is_numeric($day) ? (int) $day : ($weekdayNumbers[strtolower((string) $day)] ?? null),
+                                is_array($workingDays) ? $workingDays : []
+                            );
+                            $isScheduledOff = $workingDayNumbers !== []
+                                && !in_array($today->dayOfWeekIso, $workingDayNumbers, true);
                         @endphp
 
                         <tr class="transition hover:bg-orange-50/40">
@@ -105,7 +116,12 @@
 
                             <td class="px-6 py-4">
 
-                                @if ($attendance?->check_out_time)
+                                @if ($isScheduledOff)
+                                    <span class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                        Scheduled Off
+                                    </span>
+                                @elseif ($attendance?->check_out_time)
                                     <span class="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-700">
                                         <span class="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
                                         Signed Out

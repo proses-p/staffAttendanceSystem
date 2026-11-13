@@ -138,6 +138,23 @@
                     <span>Field reimbursements</span>
                 </a>
 
+                @if (auth()->user()?->role === 'admin')
+                    <a
+                        href="{{ route('admin.daily-work.index') }}"
+                        class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.daily-work.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                    >
+                        <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                        </svg>
+                        <span class="flex-1">Daily Work Reports</span>
+                        @if (($unreadDailyWorkCount ?? 0) > 0)
+                            <span class="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold leading-4 text-white" aria-label="{{ $unreadDailyWorkCount }} unread daily work reports">
+                                {{ $unreadDailyWorkCount }}
+                            </span>
+                        @endif
+                    </a>
+                @endif
+
 
                 <!-- Distance -->
                 <a
@@ -199,7 +216,16 @@
                     </svg>
 
                     <span>Attendance policy</span>
+                </a>
 
+                <a
+                    href="{{ route('admin.shifts.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.shifts.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 transition hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16M8 3v6m8 6v6" />
+                    </svg>
+                    <span>Manage Shifts</span>
                 </a>
 
                 <a

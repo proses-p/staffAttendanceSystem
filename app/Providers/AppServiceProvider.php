@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Models\DailyWorkSubmission;
 use App\Models\StaffLeaveRecord;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
@@ -36,8 +37,17 @@ class AppServiceProvider extends ServiceProvider
                     ->where('is_read', false)
                     ->count()
                 : 0;
+            $unreadDailyWorkCount = $companyId
+                ? DailyWorkSubmission::query()
+                    ->where('company_id', $companyId)
+                    ->where('is_read', false)
+                    ->count()
+                : 0;
 
-            $view->with('unreadLeaveCount', $unreadLeaveCount);
+            $view->with([
+                'unreadLeaveCount' => $unreadLeaveCount,
+                'unreadDailyWorkCount' => $unreadDailyWorkCount,
+            ]);
         });
     }
 }

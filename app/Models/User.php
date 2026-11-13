@@ -86,6 +86,11 @@ class User extends Authenticatable
         return $this->belongsTo(Company::class);
     }
 
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
+    }
+
     public function companyAccessMessage(): ?string
     {
         if ($this->role === 'super_admin') {

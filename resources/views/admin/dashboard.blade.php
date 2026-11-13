@@ -149,6 +149,69 @@
                             <a href="{{ route('admin.field-expenses.index', ['status' => 'pending']) }}" class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Review claims</a>
                         </div>
                     </section>
+
+                    <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div class="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 class="text-lg font-semibold text-slate-950">Sent staff invitations</h2>
+                                <p class="mt-1 text-sm text-slate-500">Track registration status for invitations sent by your company.</p>
+                            </div>
+                            <span class="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                {{ $invitations->count() }} {{ \Illuminate\Support\Str::plural('invitation', $invitations->count()) }}
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-[700px] w-full text-left">
+                                <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    <tr>
+                                        <th class="px-5 py-3">Email address</th>
+                                        <th class="px-5 py-3">Status</th>
+                                        <th class="px-5 py-3">Sent date</th>
+                                        <th class="px-5 py-3">Expires at</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @forelse ($invitations as $invitation)
+                                        @php
+                                            if ($invitation->used_at) {
+                                                $invitationStatus = 'Accepted / Registered';
+                                                $invitationStatusClass = 'bg-emerald-50 text-emerald-700';
+                                            } elseif ($invitation->expires_at->isPast()) {
+                                                $invitationStatus = 'Expired';
+                                                $invitationStatusClass = 'bg-rose-50 text-rose-700';
+                                            } else {
+                                                $invitationStatus = 'Pending';
+                                                $invitationStatusClass = 'bg-amber-50 text-amber-700';
+                                            }
+                                        @endphp
+                                        <tr class="hover:bg-slate-50/70">
+                                            <td class="px-5 py-4 text-sm font-medium text-slate-900">
+                                                {{ $invitation->email }}
+                                            </td>
+                                            <td class="px-5 py-4">
+                                                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $invitationStatusClass }}">
+                                                    {{ $invitationStatus }}
+                                                </span>
+                                            </td>
+                                            <td class="px-5 py-4 text-sm text-slate-600">
+                                                {{ $invitation->created_at?->format('d M Y, h:i A') ?? '—' }}
+                                            </td>
+                                            <td class="px-5 py-4 text-sm text-slate-600">
+                                                {{ $invitation->expires_at?->format('d M Y, h:i A') ?? '—' }}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="px-5 py-8 text-center text-sm text-slate-500">
+                                                No staff invitations have been sent yet.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
 
 

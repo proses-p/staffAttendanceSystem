@@ -388,7 +388,16 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
         $today = Carbon::today(config('app.timezone'));
-        $statistics = $this->dashboardStatistics($user, $today);
+        $schedule = $this->dashboardSchedule($user, $today);
+        $statistics = $this->dashboardStatistics($user, $today, $schedule);
+        $scheduleResponse = array_intersect_key($schedule, array_flip([
+            'shift_name',
+            'start_time',
+            'end_time',
+            'working_days',
+            'is_working_day_today',
+            'has_work_schedule',
+        ]));
 
         // check if staff has sign in today
         $attendance = Attendance::where('user_id', $user->id)
@@ -409,6 +418,7 @@ class AttendanceController extends Controller
                 'check_out_time' => '--:-- --',
                 'is_checked_in' => false,
                 'statistics' => $statistics,
+                ...$scheduleResponse,
             ]);
         }
 
@@ -429,12 +439,83 @@ class AttendanceController extends Controller
             'check_out_time' => $checkOutAt?->format('h:i A') ?? '--:-- --',
             'is_checked_in' => $checkInAt !== null && $checkOutAt === null,
             'statistics' => $statistics,
+            ...$scheduleResponse,
         ]);
+    }
+
+    private function dashboardSchedule(User $user, Carbon $today): array
+    {
+        $shift = $user->shift()
+            ->where('company_id', $user->company_id)
+            ->first();
+        $setting = AttendanceSetting::where('company_id', $user->company_id)->first();
+        $weekdayNumbers = [
+            'monday' => 1,
+            'tuesday' => 2,
+            'wednesday' => 3,
+            'thursday' => 4,
+            'friday' => 5,
+            'saturday' => 6,
+            'sunday' => 7,
+        ];
+        $configuredWorkingDays = $shift?->working_days ?? $setting?->working_days ?? [];
+        $workingDayNumbers = [];
+
+        foreach (is_array($configuredWorkingDays) ? $configuredWorkingDays : [] as $day) {
+            $number = is_numeric($day)
+                ? (int) $day
+                : ($weekdayNumbers[strtolower((string) $day)] ?? null);
+            if ($number !== null && $number >= 1 && $number <= 7) {
+                $workingDayNumbers[] = $number;
+            }
+        }
+        $workingDayNumbers = array_values(array_unique($workingDayNumbers));
+
+        $startTime = $shift?->start_time?->format('H:i')
+            ?? $setting?->expected_arrival_time?->format('H:i');
+        $expectedWorkMinutes = $shift
+            ? $this->shiftDurationMinutes($shift->start_time->format('H:i'), $shift->end_time->format('H:i'))
+            : $setting?->expected_work_minutes;
+        $endTime = $shift?->end_time?->format('H:i');
+        if (! $shift && $startTime !== null && $expectedWorkMinutes !== null) {
+            $endTime = Carbon::parse('2000-01-01 '.$startTime)
+                ->addMinutes($expectedWorkMinutes)
+                ->format('H:i');
+        }
+
+        return [
+            'shift_name' => $shift?->name,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'working_days' => array_map(
+                fn (int $number) => array_search($number, $weekdayNumbers, true),
+                $workingDayNumbers
+            ),
+            'is_working_day_today' => $workingDayNumbers === []
+                || in_array($today->dayOfWeekIso, $workingDayNumbers, true),
+            'has_work_schedule' => $workingDayNumbers !== [],
+            '_working_day_numbers' => $workingDayNumbers,
+            '_expected_work_minutes' => $expectedWorkMinutes,
+            '_grace_period_minutes' => $shift?->grace_period_minutes ?? $setting?->grace_period_minutes,
+            '_work_schedule_configured' => $workingDayNumbers !== [],
+        ];
+    }
+
+    private function shiftDurationMinutes(string $startTime, string $endTime): int
+    {
+        $start = Carbon::parse('2000-01-01 '.$startTime);
+        $end = Carbon::parse('2000-01-01 '.$endTime);
+        if ($end->lte($start)) {
+            $end->addDay();
+        }
+
+        return (int) $start->diffInMinutes($end);
     }
 
     private function dashboardStatistics(
         User $user,
-        Carbon $today
+        Carbon $today,
+        array $schedule
     ): array {
         $periodStart = $today->copy()->startOfMonth();
         $records = $user->attendances()
@@ -465,17 +546,14 @@ class AttendanceController extends Controller
             ->whereDate('end_date', '>=', $periodStart->toDateString())
             ->get();
 
-        $setting = AttendanceSetting::where('company_id', $user->company_id)->first();
-        $workingDays = $setting?->working_days ?? [];
-        $workingDays = is_array($workingDays)
-            ? array_map('intval', $workingDays)
-            : [];
-        $expectedWorkMinutes = $setting?->expected_work_minutes;
-        $arrivalTime = $setting?->expected_arrival_time;
-        $gracePeriodMinutes = $setting?->grace_period_minutes;
-        $workScheduleConfigured = is_array($workingDays) && $workingDays !== [];
+        $workingDays = $schedule['_working_day_numbers'];
+        $expectedWorkMinutes = $schedule['_expected_work_minutes'];
+        $arrivalTimeText = $schedule['start_time'];
+        $endTimeText = $schedule['end_time'];
+        $gracePeriodMinutes = $schedule['_grace_period_minutes'];
+        $workScheduleConfigured = $schedule['_work_schedule_configured'];
         $hoursConfigured = $expectedWorkMinutes !== null && $expectedWorkMinutes > 0;
-        $arrivalConfigured = $arrivalTime !== null;
+        $arrivalConfigured = $arrivalTimeText !== null;
 
         $approvedLeaveDates = [];
         if ($workScheduleConfigured) {
@@ -496,14 +574,16 @@ class AttendanceController extends Controller
 
         $workedMinutes = 0;
         $overtimeMinutes = 0;
+        $standardWorkedMinutes = 0;
+        $beforeTimeMinutes = 0;
         $eligibleScheduledDays = 0;
         $attendedDays = 0;
         $onTimeDays = 0;
+        $lateDays = 0;
+        $overtimeDays = 0;
         $incompleteDays = 0;
         $absentDays = 0;
         $now = Carbon::now(config('app.timezone'));
-        $arrivalTimeText = $arrivalTime?->format('H:i');
-
         for ($date = $periodStart->copy(); $date->lte($today); $date->addDay()) {
             $dateKey = $date->toDateString();
             $attendance = $dailyRecords->get($dateKey);
@@ -538,13 +618,28 @@ class AttendanceController extends Controller
             $eligibleScheduledDays++;
             if ($checkInAt) {
                 $attendedDays++;
-                if ($arrivalConfigured) {
-                    $arrivalDeadline = Carbon::parse(
+                $shiftStart = $arrivalConfigured
+                    ? Carbon::parse(
                         $dateKey.' '.$arrivalTimeText,
                         config('app.timezone')
-                    )->addMinutes($gracePeriodMinutes ?? 0);
+                    )
+                    : null;
+                if ($arrivalConfigured) {
+                    $arrivalDeadline = $shiftStart->copy()->addMinutes(
+                        $gracePeriodMinutes ?? 0
+                    );
+                    if ($checkInAt->lt($shiftStart)) {
+                        $beforeTimeMinutes += max(
+                            0,
+                            (int) floor(
+                                ($shiftStart->getTimestamp() - $checkInAt->getTimestamp()) / 60
+                            )
+                        );
+                    }
                     if ($checkInAt->lte($arrivalDeadline)) {
                         $onTimeDays++;
+                    } else {
+                        $lateDays++;
                     }
                 }
 
@@ -554,10 +649,34 @@ class AttendanceController extends Controller
                             $incompleteDays++;
                         }
                     } else {
-                        $overtimeMinutes += max(
-                            0,
-                            $durationMinutes - $expectedWorkMinutes
-                        );
+                        if ($shiftStart !== null) {
+                            $shiftEnd = Carbon::parse(
+                                $dateKey.' '.$endTimeText,
+                                config('app.timezone')
+                            );
+                            if ($shiftEnd->lte($shiftStart)) {
+                                $shiftEnd->addDay();
+                            }
+                            $overtimeForDay = max(
+                                0,
+                                (int) floor(
+                                    ($checkOutAt->getTimestamp() - $shiftEnd->getTimestamp()) / 60
+                                )
+                            );
+                            $overtimeMinutes += $overtimeForDay;
+                            if ($overtimeForDay > 0) {
+                                $overtimeDays++;
+                            }
+                            $standardWorkedMinutes += max(
+                                0,
+                                (int) floor(
+                                    (
+                                        min($checkOutAt->getTimestamp(), $shiftEnd->getTimestamp()) -
+                                        max($checkInAt->getTimestamp(), $shiftStart->getTimestamp())
+                                    ) / 60
+                                )
+                            );
+                        }
                         if ($durationMinutes < $expectedWorkMinutes) {
                             $incompleteDays++;
                         }
@@ -582,8 +701,13 @@ class AttendanceController extends Controller
             : null;
 
         $unavailableReasons = [
-            'overtime' => $policyNeedsHours ?? $policyNeedsWorkdays,
+            'overtime' => $policyNeedsArrival ?? $policyNeedsHours ?? $policyNeedsWorkdays,
             'on_time_rate' => $policyNeedsArrival ?? $policyNeedsWorkdays ?? $noEligibleDays,
+            'on_time_days' => $policyNeedsArrival ?? $policyNeedsWorkdays,
+            'standard_worked_minutes' => $policyNeedsArrival ?? $policyNeedsHours ?? $policyNeedsWorkdays,
+            'late_days' => $policyNeedsArrival ?? $policyNeedsWorkdays,
+            'overtime_days' => $policyNeedsArrival ?? $policyNeedsHours ?? $policyNeedsWorkdays,
+            'before_time_minutes' => $policyNeedsArrival ?? $policyNeedsWorkdays,
             'attendance_rate' => $policyNeedsWorkdays ?? $noEligibleDays,
             'approved_leave_days' => $policyNeedsWorkdays,
             'incomplete_days' => $policyNeedsHours ?? $policyNeedsWorkdays,
@@ -596,11 +720,26 @@ class AttendanceController extends Controller
                 'timezone' => config('app.timezone'),
                 'label' => $periodStart->format('M j').' - '.$today->format('M j, Y'),
             ],
-            'overtime_minutes' => $hoursConfigured && $workScheduleConfigured
+            'overtime_minutes' => $arrivalConfigured && $hoursConfigured && $workScheduleConfigured
                 ? $overtimeMinutes
+                : null,
+            'overtime_days' => $arrivalConfigured && $hoursConfigured && $workScheduleConfigured
+                ? $overtimeDays
+                : null,
+            'before_time_minutes' => $arrivalConfigured && $workScheduleConfigured
+                ? $beforeTimeMinutes
                 : null,
             'on_time_rate_percent' => $arrivalConfigured && $workScheduleConfigured && $eligibleScheduledDays > 0
                 ? round(($onTimeDays / $eligibleScheduledDays) * 100, 1)
+                : null,
+            'on_time_days' => $arrivalConfigured && $workScheduleConfigured
+                ? $onTimeDays
+                : null,
+            'standard_worked_minutes' => $arrivalConfigured && $hoursConfigured && $workScheduleConfigured
+                ? $standardWorkedMinutes
+                : null,
+            'late_days' => $arrivalConfigured && $workScheduleConfigured
+                ? $lateDays
                 : null,
             'total_worked_minutes' => $workedMinutes,
             'attendance_rate_percent' => $workScheduleConfigured && $eligibleScheduledDays > 0

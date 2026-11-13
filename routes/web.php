@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AttendanceReportController;
+use App\Http\Controllers\Admin\DailyWorkController;
 use App\Http\Controllers\Admin\FieldExpenseReviewController;
 use App\Http\Controllers\Admin\LeaveManagementController;
 use App\Http\Controllers\Admin\OfficeLocationController;
 use App\Http\Controllers\Admin\StaffDeviceController as AdminStaffDeviceController;
 use App\Http\Controllers\Admin\StaffInvitationController;
+use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceSettingController;
 use App\Http\Controllers\Auth\LoginController;
@@ -84,11 +86,20 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/admin/time-settings', [AttendanceSettingController::class, 'index'])->name('admin.time-settings.index');
         Route::post('/admin/time-settings', [AttendanceSettingController::class, 'store'])->name('admin.time-settings.store');
+        Route::get('/admin/shifts', [ShiftController::class, 'index'])->name('admin.shifts.index');
+        Route::post('/admin/shifts', [ShiftController::class, 'store'])->name('admin.shifts.store');
+        Route::put('/admin/shifts/{shift}', [ShiftController::class, 'update'])->whereNumber('shift')->name('admin.shifts.update');
+        Route::delete('/admin/shifts/{shift}', [ShiftController::class, 'destroy'])->whereNumber('shift')->name('admin.shifts.destroy');
+        Route::post('/admin/shifts/assign', [ShiftController::class, 'assign'])->name('admin.shifts.assign');
         Route::post('/admin/holidays', [AttendanceSettingController::class, 'storeHoliday'])->name('admin.holidays.store');
         Route::delete('/admin/holidays/{holiday}', [AttendanceSettingController::class, 'destroyHoliday'])->name('admin.holidays.destroy');
         Route::get('/admin/leaves', [LeaveManagementController::class, 'index'])->name('admin.leaves.index');
         Route::post('/admin/leave-records', [LeaveManagementController::class, 'store'])->name('admin.leave-records.store');
         Route::patch('/admin/leave-records/{leaveRecord}', [LeaveManagementController::class, 'update'])->name('admin.leave-records.update');
+        Route::get('/admin/daily-work', [DailyWorkController::class, 'index'])->name('admin.daily-work.index');
+        Route::post('/admin/daily-work/tasks', [DailyWorkController::class, 'assignTask'])->name('admin.daily-work.tasks.store');
+        Route::post('/admin/daily-work/{submission}/accept', [DailyWorkController::class, 'accept'])->whereNumber('submission')->name('admin.daily-work.accept');
+        Route::post('/admin/daily-work/{submission}/request-revision', [DailyWorkController::class, 'requestRevision'])->whereNumber('submission')->name('admin.daily-work.request-revision');
         Route::post('/admin/invitations', [StaffInvitationController::class, 'store'])->name('admin.invitations.store');
         Route::get('/admin/attendance/report', [PdfDevelopmentController::class, 'download'])->name('admin.attendance.report');
         // Route::get('/admin/attendance/search', [AdminSearchController::class, 'index'])->name('admin.attendance.search');
