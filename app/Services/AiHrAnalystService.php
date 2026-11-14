@@ -8,6 +8,7 @@ use App\Models\DailyWorkSubmission;
 use App\Models\FieldAssignment;
 use App\Models\MonthlyPayrollRecord;
 use App\Models\User;
+use App\Services\Concerns\ResolvesGeminiModels;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -16,6 +17,8 @@ use RuntimeException;
 
 class AiHrAnalystService
 {
+    use ResolvesGeminiModels;
+
     private const SYSTEM_INSTRUCTION = <<<'PROMPT'
 You are an enterprise HR, Operations, and Financial Data Analyst for this specific company.
 Rely 100% exclusively on the provided JSON dataset. Every number, percentage, currency amount (TZS), and date you cite MUST match the dataset verbatim. Do not calculate, estimate, round, infer, or guess any figure not explicitly present in the JSON dataset. If a requested metric is absent, say it is not present in the provided records.
@@ -281,7 +284,6 @@ PROMPT;
         if ($apiKey === '') {
             throw new RuntimeException('Gemini is not configured. Set GEMINI_API_KEY to enable AI analysis.');
         }
-        $model = (string) config('services.gemini.model', 'gemini-2.0-flash');
         try {
             $contextJson = json_encode(
                 $context,
@@ -295,10 +297,7 @@ PROMPT;
         }
         $message = $request."\n\nVerified JSON dataset (source of truth):\n".$contextJson;
 
-        $models = array_values(array_unique(array_merge(
-            [$model],
-            ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']
-        )));
+        $models = $this->resolveAvailableModels($apiKey);
         $lastError = 'All configured Gemini models failed.';
         $lastConnectionException = null;
 

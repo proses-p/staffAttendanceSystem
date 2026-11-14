@@ -10,6 +10,7 @@ use App\Models\MonthlyPayrollRecord;
 use App\Models\StaffAssignedTask;
 use App\Models\StaffLeaveRecord;
 use App\Models\User;
+use App\Services\Concerns\ResolvesGeminiModels;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +19,8 @@ use RuntimeException;
 
 class StaffAiAssistantService
 {
+    use ResolvesGeminiModels;
+
     private const SYSTEM_INSTRUCTION = <<<'PROMPT'
 You are a private work, schedule, attendance, daily-report, and earnings assistant for one authenticated staff member.
 You may discuss ONLY the exact staff member identified in the provided JSON context and ONLY the records included there. Never reveal, infer, or discuss other employees' data or any company-wide budget or company-wide financial information.
@@ -282,11 +285,7 @@ PROMPT;
         if ($apiKey === '') {
             throw new RuntimeException('AI Assistant is not configured. Please contact your administrator.');
         }
-        $model = (string) config('services.gemini.model', 'gemini-2.0-flash');
-        $models = array_values(array_unique(array_merge(
-            [$model],
-            ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']
-        )));
+        $models = $this->resolveAvailableModels($apiKey);
         $lastError = 'All configured Gemini models failed.';
         $lastConnectionException = null;
 
