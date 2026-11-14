@@ -297,7 +297,7 @@ PROMPT;
 
         $models = array_values(array_unique(array_merge(
             [$model],
-            ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
+            ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']
         )));
         $lastError = 'All configured Gemini models failed.';
         $lastConnectionException = null;
