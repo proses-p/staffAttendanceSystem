@@ -10,6 +10,7 @@ use App\Models\MonthlyPayrollRecord;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use JsonException;
 use RuntimeException;
@@ -281,10 +282,7 @@ PROMPT;
         if ($apiKey === '') {
             throw new RuntimeException('Gemini is not configured. Set GEMINI_API_KEY to enable AI analysis.');
         }
-        $model = (string) config('services.gemini.model', 'gemini-2.5-flash');
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-            .rawurlencode($model)
-            .':generateContent';
+        $model = (string) config('services.gemini.model', 'gemini-3.8-flash');
         try {
             $contextJson = json_encode(
                 $context,
@@ -299,23 +297,47 @@ PROMPT;
         $message = $request."\n\nVerified JSON dataset (source of truth):\n".$contextJson;
 
         try {
-            $response = Http::acceptJson()
-                ->withHeaders(['x-goog-api-key' => $apiKey])
-                ->connectTimeout(10)
-                ->timeout(30)
-                ->post($url, [
-                    'systemInstruction' => [
-                        'parts' => [['text' => self::SYSTEM_INSTRUCTION]],
-                    ],
-                    'contents' => [[
-                        'role' => 'user',
-                        'parts' => [['text' => $message]],
-                    ]],
-                    'generationConfig' => [
-                        'temperature' => 0,
-                        'maxOutputTokens' => 4096,
-                    ],
-                ]);
+            $sendRequest = function (string $requestModel) use ($apiKey, $message) {
+                $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
+                    .rawurlencode($requestModel)
+                    .':generateContent';
+
+                return Http::acceptJson()
+                    ->withHeaders(['x-goog-api-key' => $apiKey])
+                    ->connectTimeout(10)
+                    ->timeout(30)
+                    ->post($url, [
+                        'systemInstruction' => [
+                            'parts' => [['text' => self::SYSTEM_INSTRUCTION]],
+                        ],
+                        'contents' => [[
+                            'role' => 'user',
+                            'parts' => [['text' => $message]],
+                        ]],
+                        'generationConfig' => [
+                            'temperature' => 0,
+                            'maxOutputTokens' => 4096,
+                        ],
+                    ]);
+            };
+            $response = $sendRequest($model);
+            if ($this->isTransientOverload($response)) {
+                usleep(500000);
+                $response = $sendRequest($model);
+
+                if ($this->isTransientOverload($response)) {
+                    foreach (['gemini-4-hydrogen', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite'] as $fallbackModel) {
+                        if ($fallbackModel === $model) {
+                            continue;
+                        }
+
+                        $response = $sendRequest($fallbackModel);
+                        if (! $this->isTransientOverload($response)) {
+                            break;
+                        }
+                    }
+                }
+            }
         } catch (ConnectionException $exception) {
             throw new RuntimeException(
                 'Gemini could not be reached. Please try the analysis again.',
@@ -344,6 +366,14 @@ PROMPT;
         $this->ensureStructuredResponse($answer);
 
         return $answer;
+    }
+
+    private function isTransientOverload(Response $response): bool
+    {
+        $providerMessage = $response->json('error.message');
+
+        return in_array($response->status(), [429, 503], true)
+            || (is_string($providerMessage) && str_contains(strtolower($providerMessage), 'high demand'));
     }
 
     private function period(string $month): array

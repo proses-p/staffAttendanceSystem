@@ -12,6 +12,7 @@ use App\Models\StaffLeaveRecord;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use JsonException;
 use RuntimeException;
@@ -283,29 +284,50 @@ PROMPT;
         if ($apiKey === '') {
             throw new RuntimeException('AI Assistant is not configured. Please contact your administrator.');
         }
-        $model = (string) config('services.gemini.model', 'gemini-2.5-flash');
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-            .rawurlencode($model)
-            .':generateContent';
+        $model = (string) config('services.gemini.model', 'gemini-3.8-flash');
 
         try {
-            $response = Http::acceptJson()
-                ->withHeaders(['x-goog-api-key' => $apiKey])
-                ->connectTimeout(10)
-                ->timeout(30)
-                ->post($url, [
-                    'systemInstruction' => [
-                        'parts' => [['text' => $systemInstruction]],
-                    ],
-                    'contents' => [[
-                        'role' => 'user',
-                        'parts' => [['text' => $prompt]],
-                    ]],
-                    'generationConfig' => [
-                        'temperature' => 0,
-                        'maxOutputTokens' => $maxOutputTokens,
-                    ],
-                ]);
+            $sendRequest = function (string $requestModel) use ($apiKey, $systemInstruction, $prompt, $maxOutputTokens) {
+                $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
+                    .rawurlencode($requestModel)
+                    .':generateContent';
+
+                return Http::acceptJson()
+                    ->withHeaders(['x-goog-api-key' => $apiKey])
+                    ->connectTimeout(10)
+                    ->timeout(30)
+                    ->post($url, [
+                        'systemInstruction' => [
+                            'parts' => [['text' => $systemInstruction]],
+                        ],
+                        'contents' => [[
+                            'role' => 'user',
+                            'parts' => [['text' => $prompt]],
+                        ]],
+                        'generationConfig' => [
+                            'temperature' => 0,
+                            'maxOutputTokens' => $maxOutputTokens,
+                        ],
+                    ]);
+            };
+            $response = $sendRequest($model);
+            if ($this->isTransientOverload($response)) {
+                usleep(500000);
+                $response = $sendRequest($model);
+
+                if ($this->isTransientOverload($response)) {
+                    foreach (['gemini-4-hydrogen', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite'] as $fallbackModel) {
+                        if ($fallbackModel === $model) {
+                            continue;
+                        }
+
+                        $response = $sendRequest($fallbackModel);
+                        if (! $this->isTransientOverload($response)) {
+                            break;
+                        }
+                    }
+                }
+            }
         } catch (ConnectionException $exception) {
             throw new RuntimeException(
                 'AI Assistant could not be reached. Please try again.',
@@ -325,6 +347,14 @@ PROMPT;
         }
 
         return trim($answer);
+    }
+
+    private function isTransientOverload(Response $response): bool
+    {
+        $providerMessage = $response->json('error.message');
+
+        return in_array($response->status(), [429, 503], true)
+            || (is_string($providerMessage) && str_contains(strtolower($providerMessage), 'high demand'));
     }
 
     private function validateStructuredReply(string $reply): void
