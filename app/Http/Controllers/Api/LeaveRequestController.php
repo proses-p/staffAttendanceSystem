@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\StaffLeaveRecord;
 use App\Models\User;
+use App\Services\CompanyHolidayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class LeaveRequestController extends Controller
             ->where('company_id', $request->user()->company_id)
             ->where('user_id', $request->user()->id)
             ->orderByDesc('created_at')
+            ->with('user')
             ->get()
             ->map(fn (StaffLeaveRecord $leave): array => $this->leaveData($leave));
 
@@ -64,7 +66,7 @@ class LeaveRequestController extends Controller
 
         return response()->json([
             'message' => 'Leave request submitted successfully.',
-            'leave_request' => $this->leaveData($leave),
+            'leave_request' => $this->leaveData($leave->load('user')),
         ], 201);
     }
 
@@ -75,6 +77,13 @@ class LeaveRequestController extends Controller
             'leave_type' => $leave->leave_type,
             'start_date' => $leave->start_date->toDateString(),
             'end_date' => $leave->end_date->toDateString(),
+            'leave_days' => $leave->user
+                ? app(CompanyHolidayService::class)->scheduledLeaveDays(
+                    $leave->user,
+                    $leave->start_date,
+                    $leave->end_date
+                )
+                : null,
             'reason' => $leave->reason,
             'status' => $leave->status,
             'decision_note' => $leave->decision_note,

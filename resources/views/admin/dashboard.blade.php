@@ -17,32 +17,13 @@
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
-<body class="min-h-screen bg-slate-50 text-slate-900">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
 
     <div class="min-h-screen flex flex-col lg:flex-row">
 
-        <button
-            type="button"
-            id="openSidebarButton"
-            aria-controls="adminSidebar"
-            aria-expanded="false"
-            onclick="openSidebar()"
-            class="fixed left-4 top-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-700 shadow-sm lg:hidden"
-        >
-            <span aria-hidden="true">☰</span>
-            <span class="sr-only">Open navigation</span>
-        </button>
-
-        <div
-            id="sidebarOverlay"
-            onclick="closeSidebar()"
-            class="fixed inset-0 z-40 hidden bg-slate-950/40 lg:hidden"
-            aria-hidden="true"
-        ></div>
-
         @include('components.admin-sidebar')
 
-        <main class="relative flex-1 p-4 pt-20 sm:p-6 sm:pt-20 lg:p-10">
+        <main class="relative min-w-0 flex-1 scroll-mt-0 p-4 sm:p-6 lg:p-8">
 
             <div class="mx-auto max-w-7xl">
 
@@ -157,7 +138,7 @@
                                 <p class="mt-1 text-sm text-slate-500">Track registration status for invitations sent by your company.</p>
                             </div>
                             <span class="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                                {{ $invitations->count() }} {{ \Illuminate\Support\Str::plural('invitation', $invitations->count()) }}
+                                {{ $invitations->total() }} {{ \Illuminate\Support\Str::plural('invitation', $invitations->total()) }}
                             </span>
                         </div>
 
@@ -210,6 +191,9 @@
                                     @endforelse
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="border-t border-slate-200 px-5 py-4">
+                            {{ $invitations->links() }}
                         </div>
                     </section>
                 </div>
@@ -522,10 +506,10 @@
 
     <div
         id="staffModal"
-        class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4"
+        class="hidden fixed inset-0 z-50 items-center justify-center overflow-y-auto bg-slate-900/60 p-4"
     >
 
-        <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6">
+        <div class="relative my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
 
             <div class="flex justify-between items-center mb-5">
 
@@ -589,10 +573,10 @@
 
     <div
         id="locationModal"
-        class="hidden fixed inset-0 z-50 bg-black/50 items-center justify-center px-4"
+        class="hidden fixed inset-0 z-50 items-center justify-center overflow-y-auto bg-slate-900/60 p-4"
     >
 
-        <div class="bg-white w-full max-w-sm rounded-xl shadow-xl p-6">
+        <div class="relative my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
 
             
 

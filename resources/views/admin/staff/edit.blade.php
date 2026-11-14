@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
-<body class="min-h-screen bg-slate-50 text-slate-900">
-    <main class="mx-auto max-w-3xl p-4 sm:p-6 lg:p-10">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
+    <main class="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         <header class="mb-8 flex flex-col gap-4 border-b border-slate-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <p class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">

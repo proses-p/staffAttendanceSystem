@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
 <div class="min-h-screen flex flex-col lg:flex-row">
     @include('components.admin-sidebar')
-    <main class="flex-1 p-4 sm:p-6 lg:p-10">
+    <main class="min-w-0 flex-1 scroll-mt-0 p-4 sm:p-6 lg:p-8">
         <div class="mx-auto max-w-5xl space-y-7">
             <header class="border-b border-slate-200 pb-6">
                 <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">Workspace preferences</p>

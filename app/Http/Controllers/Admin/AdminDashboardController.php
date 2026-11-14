@@ -17,10 +17,16 @@ class AdminDashboardController extends Controller
         $companyId = auth()->user()->company_id;
         $today = Carbon::today();
 
+        StaffInvitation::query()
+            ->where('company_id', $companyId)
+            ->whereNull('used_at')
+            ->where('expires_at', '<', now())
+            ->delete();
+
         $invitations = StaffInvitation::query()
             ->where('company_id', $companyId)
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(5);
 
         $staff = User::where('company_id', $companyId)
             ->where('role', 'staff')

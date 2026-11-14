@@ -15,7 +15,16 @@ class Company extends Model
     protected $fillable = [
         'name',
         'slug',
+        'ai_enabled',
+        'payroll_mode',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'ai_enabled' => 'boolean',
+        ];
+    }
 
     public function users(): HasMany
     {
@@ -50,5 +59,20 @@ class Company extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function financialBudgets(): HasMany
+    {
+        return $this->hasMany(CompanyFinancialBudget::class);
+    }
+
+    public function compensationProfiles(): HasMany
+    {
+        return $this->hasMany(StaffCompensationProfile::class);
+    }
+
+    public function payrollRecords(): HasMany
+    {
+        return $this->hasMany(MonthlyPayrollRecord::class);
     }
 }

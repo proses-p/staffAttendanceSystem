@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
 <div class="min-h-screen flex flex-col lg:flex-row">
     @include('components.admin-sidebar')
-    <main class="flex-1 p-4 sm:p-6 lg:p-10">
+    <main class="min-w-0 flex-1 scroll-mt-0 p-4 sm:p-6 lg:p-8">
         <div class="mx-auto max-w-5xl space-y-7">
             <header class="border-b border-slate-200 pb-6">
                 <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">Workspace requests</p>
@@ -75,6 +75,9 @@
                                 <div class="text-sm">
                                     <p class="font-semibold">{{ $leave->user?->name ?? 'Deleted staff account' }}</p>
                                     <p class="mt-1 text-slate-600">{{ $leave->leave_type }} · {{ $leave->start_date->format('M j, Y') }} – {{ $leave->end_date->format('M j, Y') }}</p>
+                                    @if ($leave->leave_days !== null)
+                                        <p class="mt-1 text-xs text-slate-500">{{ $leave->leave_days }} scheduled leave {{ \Illuminate\Support\Str::plural('day', $leave->leave_days) }} (company holidays excluded)</p>
+                                    @endif
                                     <p class="mt-1 text-xs text-slate-500">
                                         {{ $leave->request_source === 'staff_request' ? 'Staff request' : 'Admin record' }}
                                         · Submitted {{ $leave->created_at?->format('M j, Y') ?? 'date unavailable' }}

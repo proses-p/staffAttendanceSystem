@@ -83,6 +83,21 @@
                     {{ $company->status === \App\Models\Company::STATUS_ACTIVE ? 'Suspend company' : 'Reactivate company' }}
                 </button>
             </form>
+
+            <div class="mt-6 border-t border-slate-200 pt-5">
+                <h3 class="font-semibold text-slate-900">AI Features (AaaS)</h3>
+                <p class="mt-1 text-sm text-slate-600">
+                    {{ $company->ai_enabled ? 'AI assistant and report drafting are enabled for this organization.' : 'AI assistant and report drafting are disabled for this organization.' }}
+                </p>
+                <form method="POST" action="{{ route('platform.companies.update', $company) }}" class="mt-3">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="ai_enabled" value="{{ $company->ai_enabled ? '0' : '1' }}">
+                    <button class="platform-button {{ $company->ai_enabled ? 'platform-button-danger' : 'platform-button-primary' }}" type="submit">
+                        {{ $company->ai_enabled ? 'Disable AI features' : 'Enable AI features' }}
+                    </button>
+                </form>
+            </div>
         </section>
 
         <section class="platform-panel platform-invite-panel">
@@ -106,6 +121,62 @@
                 </form>
                 <p class="platform-form-help">Invitation tokens are sent by email and are not displayed in this dashboard.</p>
             @endif
+
+            <div class="mt-8 border-t border-slate-200 pt-6">
+                <div class="platform-panel-heading">
+                    <div>
+                        <h2>Sent administrator invitations</h2>
+                        <p>Track each invite and the company name registered during onboarding.</p>
+                    </div>
+                </div>
+                @if ($adminInvitations->isEmpty())
+                    <p class="text-sm text-slate-500">No administrator invitations have been sent for this company.</p>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[560px] text-left text-sm">
+                            <thead class="text-xs uppercase tracking-wide text-slate-500">
+                                <tr>
+                                    <th class="py-3 pr-4">Email</th>
+                                    <th class="py-3 pr-4">Company Name</th>
+                                    <th class="py-3 pr-4">Sent</th>
+                                    <th class="py-3 pr-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach ($adminInvitations as $adminInvitation)
+                                    @php
+                                        $registeredAdmin = $companyAdminsByEmail->get($adminInvitation->email);
+                                        if ($adminInvitation->used_at !== null) {
+                                            $invitationStatus = $registeredAdmin?->is_active ? 'Completed / Active' : 'Completed';
+                                            $invitationStatusClass = $registeredAdmin?->is_active
+                                                ? 'bg-emerald-100 text-emerald-800'
+                                                : 'bg-slate-100 text-slate-700';
+                                        } elseif ($adminInvitation->expires_at->isPast()) {
+                                            $invitationStatus = 'Expired';
+                                            $invitationStatusClass = 'bg-rose-100 text-rose-800';
+                                        } else {
+                                            $invitationStatus = 'Pending';
+                                            $invitationStatusClass = 'bg-amber-100 text-amber-800';
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td class="py-3 pr-4 font-medium text-slate-800">{{ $adminInvitation->email }}</td>
+                                        <td class="py-3 pr-4 text-slate-600">
+                                            {{ $registeredAdmin ? $company->name : '—' }}
+                                        </td>
+                                        <td class="py-3 pr-4 text-slate-500">{{ $adminInvitation->created_at->format('M j, Y') }}</td>
+                                        <td class="py-3 pr-4">
+                                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $invitationStatusClass }}">
+                                                {{ $invitationStatus }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
         </section>
     </div>
 @endsection

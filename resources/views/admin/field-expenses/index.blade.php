@@ -7,10 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
 <div class="min-h-screen flex flex-col lg:flex-row">
     @include('components.admin-sidebar')
-    <main class="min-w-0 flex-1 p-4 pt-8 sm:p-6 lg:p-10">
+    <main class="min-w-0 flex-1 scroll-mt-0 p-4 sm:p-6 lg:p-8">
         <div class="mx-auto max-w-7xl">
             <header class="mb-7 flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
                 <div>

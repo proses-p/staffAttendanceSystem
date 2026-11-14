@@ -114,4 +114,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(StaffDevice::class);
     }
+
+    public function staffCompensationProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(StaffCompensationProfile::class);
+    }
+
+    public function payrollRecords(): HasMany
+    {
+        return $this->hasMany(MonthlyPayrollRecord::class);
+    }
 }

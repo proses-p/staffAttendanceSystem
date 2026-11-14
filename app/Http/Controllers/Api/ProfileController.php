@@ -12,7 +12,9 @@ class ProfileController extends Controller
     public function show(Request $request)
     {
         return response()->json([
-            'user' => $this->profileData($request->user()),
+            'user' => $this->profileData(
+                $request->user()->loadMissing(['company', 'shift'])
+            ),
         ]);
     }
 
@@ -28,7 +30,9 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully.',
-            'user' => $this->profileData($user->fresh()),
+            'user' => $this->profileData(
+                $user->fresh()->loadMissing(['company', 'shift'])
+            ),
         ]);
     }
 
@@ -63,9 +67,11 @@ class ProfileController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'organization' => $user->organization,
+            'organization' => $user->company?->name ?? $user->organization,
+            'company_name' => $user->company?->name,
             'phone' => $user->phone,
             'employee_id' => $user->employee_id,
+            'shift_name' => $user->shift?->name,
             'role' => $user->role,
             'is_active' => $user->is_active,
             'created_at' => $user->created_at?->toISOString(),

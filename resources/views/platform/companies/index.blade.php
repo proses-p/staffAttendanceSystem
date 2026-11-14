@@ -95,6 +95,14 @@
                         <span @class(['platform-status', 'status-active' => $company->status === \App\Models\Company::STATUS_ACTIVE, 'status-suspended' => $company->status === \App\Models\Company::STATUS_SUSPENDED])>
                             {{ ucfirst($company->status) }}
                         </span>
+                        <form method="POST" action="{{ route('platform.companies.update', $company) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="ai_enabled" value="{{ $company->ai_enabled ? '0' : '1' }}">
+                            <button type="submit" class="platform-button platform-button-small {{ $company->ai_enabled ? 'platform-button-secondary' : 'platform-button-primary' }}" aria-label="{{ $company->ai_enabled ? 'Disable AI for' : 'Enable AI for' }} {{ $company->name }}">
+                                AI {{ $company->ai_enabled ? 'On' : 'Off' }}
+                            </button>
+                        </form>
                         <a class="platform-button platform-button-small platform-button-secondary" href="{{ route('platform.companies.show', $company) }}">Manage</a>
                     </article>
                 @endforeach

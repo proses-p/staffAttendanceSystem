@@ -50,13 +50,12 @@ class AdminFieldOperationsController extends Controller
             ->map(fn (FieldAssignment $assignment): array => [
                 'assignment_id' => $assignment->id,
                 'name' => $assignment->user->name,
-                'task_type' => $assignment->task_type,
+                'client_or_service_name' => $assignment->client_or_service_name
+                    ?? str_replace('_', ' ', $assignment->task_type),
                 'purpose' => $assignment->purpose_description,
                 'clock_in_at' => $assignment->clock_in_at?->toIso8601String(),
                 'latitude' => $assignment->last_lat ?? $assignment->clock_in_lat,
                 'longitude' => $assignment->last_lng ?? $assignment->clock_in_lng,
-                'last_seen_at' => ($assignment->last_location_at ?? $assignment->clock_in_at)?->toIso8601String(),
-                'is_flagged' => $assignment->is_flagged,
             ]);
 
         return response()->json(['on_field' => $rows]);

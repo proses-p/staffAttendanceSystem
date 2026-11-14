@@ -175,7 +175,7 @@ class DailyWorkSubmissionController extends Controller
                 : null,
             'photos' => $submission->photos->map(fn ($photo) => [
                 'id' => $photo->id,
-                'url' => Storage::disk('public')->url($photo->photo_path),
+                'url' => $photo->url,
             ]),
         ];
     }

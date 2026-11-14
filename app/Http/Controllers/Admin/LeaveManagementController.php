@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\StaffLeaveRecord;
 use App\Models\StaffNotification; 
 use App\Models\User;
+use App\Services\CompanyHolidayService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,11 +31,10 @@ class LeaveManagementController extends Controller
             'leave_status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
         ]);
 
-        return view('admin.leaves', [
-            'leaveRecords' => StaffLeaveRecord::query()
+        $leaveRecords = StaffLeaveRecord::query()
                 ->where('company_id', $companyId)
                 ->whereHas('user', fn ($query) => $query->where('company_id', $companyId))
-                ->with('user:id,name,email')
+                ->with('user')
                 ->when(
                     $filters['leave_status'] ?? null,
                     fn ($query, $status) => $query->where('status', $status)
@@ -42,7 +42,23 @@ class LeaveManagementController extends Controller
                 ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
                 ->orderByDesc('created_at')
                 ->paginate(20)
-                ->withQueryString(),
+                ->withQueryString();
+        $holidayService = app(CompanyHolidayService::class);
+        $leaveRecords->getCollection()->each(function (StaffLeaveRecord $leave) use ($holidayService): void {
+            $leave->setAttribute(
+                'leave_days',
+                $leave->user
+                    ? $holidayService->scheduledLeaveDays(
+                        $leave->user,
+                        $leave->start_date,
+                        $leave->end_date
+                    )
+                    : null
+            );
+        });
+
+        return view('admin.leaves', [
+            'leaveRecords' => $leaveRecords,
             'leaveStatus' => $filters['leave_status'] ?? null,
             'leaveCounts' => StaffLeaveRecord::query()
                 ->where('company_id', $companyId)

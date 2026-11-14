@@ -9,6 +9,7 @@ use App\Models\OfficeLocation;
 use App\Models\StaffLeaveRecord;
 use App\Models\User;
 use App\Services\StaffDeviceProofService;
+use App\Services\CompanyHolidayService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -388,7 +389,10 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
         $today = Carbon::today(config('app.timezone'));
+        $holiday = app(CompanyHolidayService::class)->forDate($user->company_id, $today);
         $schedule = $this->dashboardSchedule($user, $today);
+        $schedule['is_holiday_today'] = $holiday !== null;
+        $schedule['holiday_name'] = $holiday?->name;
         $statistics = $this->dashboardStatistics($user, $today, $schedule);
         $scheduleResponse = array_intersect_key($schedule, array_flip([
             'shift_name',
@@ -397,7 +401,25 @@ class AttendanceController extends Controller
             'working_days',
             'is_working_day_today',
             'has_work_schedule',
+            'is_holiday_today',
+            'holiday_name',
         ]));
+        $office = OfficeLocation::query()
+            ->where('company_id', $user->company_id)
+            ->orderBy('id')
+            ->first();
+        $officeResponse = [
+            'office_latitude' => $office?->latitude === null
+                ? null
+                : (float) $office->latitude,
+            'office_longitude' => $office?->longitude === null
+                ? null
+                : (float) $office->longitude,
+            'geofence_radius_meters' => $office?->allowed_radius === null
+                ? null
+                : (float) $office->allowed_radius,
+            'office_name' => $office?->office_name,
+        ];
 
         // check if staff has sign in today
         $attendance = Attendance::where('user_id', $user->id)
@@ -419,6 +441,7 @@ class AttendanceController extends Controller
                 'is_checked_in' => false,
                 'statistics' => $statistics,
                 ...$scheduleResponse,
+                ...$officeResponse,
             ]);
         }
 
@@ -440,6 +463,7 @@ class AttendanceController extends Controller
             'is_checked_in' => $checkInAt !== null && $checkOutAt === null,
             'statistics' => $statistics,
             ...$scheduleResponse,
+            ...$officeResponse,
         ]);
     }
 
@@ -530,13 +554,11 @@ class AttendanceController extends Controller
             fn (Attendance $attendance) => $attendance->attendance_date->toDateString()
         )->map(fn ($dayRecords) => $dayRecords->first());
 
-        $holidays = AttendanceHoliday::query()
-            ->where('company_id', $user->company_id)
-            ->whereDate('holiday_date', '>=', $periodStart->toDateString())
-            ->whereDate('holiday_date', '<=', $today->toDateString())
-            ->pluck('holiday_date')
-            ->map(fn ($date) => Carbon::parse($date)->toDateString())
-            ->flip();
+        $holidays = app(CompanyHolidayService::class)
+            ->datesInRange($user->company_id, $periodStart, $today)
+            ->mapWithKeys(fn (AttendanceHoliday $holiday) => [
+                $holiday->holiday_date->toDateString() => true,
+            ]);
 
         $approvedLeaveRecords = StaffLeaveRecord::query()
             ->where('company_id', $user->company_id)
@@ -583,6 +605,7 @@ class AttendanceController extends Controller
         $overtimeDays = 0;
         $incompleteDays = 0;
         $absentDays = 0;
+        $holidayOvertimeDays = 0;
         $now = Carbon::now(config('app.timezone'));
         for ($date = $periodStart->copy(); $date->lte($today); $date->addDay()) {
             $dateKey = $date->toDateString();
@@ -596,10 +619,18 @@ class AttendanceController extends Controller
                 $workedMinutes += $durationMinutes;
             }
 
+            if ($holidays->has($dateKey)) {
+                if ($durationMinutes !== null && $checkInAt && $checkOutAt) {
+                    $overtimeMinutes += $durationMinutes;
+                    $overtimeDays++;
+                    $holidayOvertimeDays++;
+                }
+                continue;
+            }
+
             if (
                 ! $workScheduleConfigured ||
                 ! in_array($date->dayOfWeekIso, $workingDays, true) ||
-                $holidays->has($dateKey) ||
                 isset($approvedLeaveDates[$dateKey])
             ) {
                 continue;
@@ -683,7 +714,9 @@ class AttendanceController extends Controller
                     }
                 }
             } else {
-                $absentDays++;
+                if ($date->lt($today) && $attendance === null) {
+                    $absentDays++;
+                }
             }
         }
 
@@ -720,10 +753,12 @@ class AttendanceController extends Controller
                 'timezone' => config('app.timezone'),
                 'label' => $periodStart->format('M j').' - '.$today->format('M j, Y'),
             ],
-            'overtime_minutes' => $arrivalConfigured && $hoursConfigured && $workScheduleConfigured
+            'overtime_minutes' => ($arrivalConfigured && $hoursConfigured && $workScheduleConfigured) ||
+                $holidayOvertimeDays > 0
                 ? $overtimeMinutes
                 : null,
-            'overtime_days' => $arrivalConfigured && $hoursConfigured && $workScheduleConfigured
+            'overtime_days' => ($arrivalConfigured && $hoursConfigured && $workScheduleConfigured) ||
+                $holidayOvertimeDays > 0
                 ? $overtimeDays
                 : null,
             'before_time_minutes' => $arrivalConfigured && $workScheduleConfigured

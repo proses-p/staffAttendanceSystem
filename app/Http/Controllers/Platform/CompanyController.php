@@ -69,7 +69,7 @@ class CompanyController extends Controller
             return response()->json([
                 'companies' => Company::query()
                     ->orderBy('name')
-                    ->get(['id', 'name', 'slug', 'status']),
+                    ->get(['id', 'name', 'slug', 'status', 'ai_enabled']),
             ]);
         }
 
@@ -117,8 +117,21 @@ class CompanyController extends Controller
             ->whereNull('used_at')
             ->where('expires_at', '>', now())
             ->count();
+        $adminInvitations = $company->staffInvitations()
+            ->where('role', 'admin')
+            ->latest()
+            ->get();
+        $companyAdminsByEmail = $company->users()
+            ->where('role', 'admin')
+            ->get()
+            ->keyBy('email');
 
-        return view('platform.companies.show', compact('company', 'pendingAdminInvitations'));
+        return view('platform.companies.show', compact(
+            'company',
+            'pendingAdminInvitations',
+            'adminInvitations',
+            'companyAdminsByEmail'
+        ));
     }
 
     public function store(Request $request)
@@ -158,11 +171,14 @@ class CompanyController extends Controller
                 Company::STATUS_ACTIVE,
                 Company::STATUS_SUSPENDED,
             ])],
+            'ai_enabled' => ['sometimes', 'required', 'boolean'],
         ]);
-
-        $company->fill(collect($data)->except('status')->all());
+        $company->fill(collect($data)->except(['status', 'ai_enabled'])->all());
         if (array_key_exists('status', $data)) {
             $company->status = $data['status'];
+        }
+        if (array_key_exists('ai_enabled', $data)) {
+            $company->ai_enabled = $data['ai_enabled'];
         }
         $company->save();
 
@@ -174,7 +190,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'success' => true,
-            'company' => $company->only(['id', 'name', 'slug', 'status']),
+            'company' => $company->only(['id', 'name', 'slug', 'status', 'ai_enabled']),
         ]);
     }
 

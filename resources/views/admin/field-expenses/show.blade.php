@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
 <div class="min-h-screen flex flex-col lg:flex-row">
     @include('components.admin-sidebar')
-    <main class="min-w-0 flex-1 p-4 pt-8 sm:p-6 lg:p-10">
+    <main class="min-w-0 flex-1 scroll-mt-0 p-4 sm:p-6 lg:p-8">
         <div class="mx-auto max-w-7xl">
             <a href="{{ route('admin.field-expenses.index') }}" class="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-700 hover:text-cyan-900">← Pending Field Reimbursements</a>
             <header class="mb-6 flex flex-col gap-3 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -137,7 +137,7 @@
 </div>
 
 @if ($expense->status === 'pending')
-    <dialog id="rejectDialog" class="w-[min(94vw,32rem)] rounded-2xl p-0 shadow-2xl backdrop:bg-slate-950/50" @if ($errors->has('admin_notes')) open @endif>
+    <dialog id="rejectDialog" class="m-auto max-h-[90vh] w-[min(94vw,32rem)] overflow-y-auto rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/60" @if ($errors->has('admin_notes')) open @endif>
         <form method="POST" action="{{ route('admin.field-expenses.reject', $expense) }}" class="p-6" onsubmit="return submitReview(this)">
             @csrf
             <h2 class="text-xl font-semibold">Reject expense claim</h2>

@@ -1,9 +1,14 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Admin\AiAnalyticsController;
 use App\Http\Controllers\Admin\AttendanceReportController;
+use App\Http\Controllers\Admin\ChatController;
 use App\Http\Controllers\Admin\DailyWorkController;
 use App\Http\Controllers\Admin\FieldExpenseReviewController;
+use App\Http\Controllers\Admin\FinancePayrollController;
+use App\Http\Controllers\Admin\FieldOperationsController as AdminFieldOperationsPageController;
 use App\Http\Controllers\Admin\LeaveManagementController;
 use App\Http\Controllers\Admin\OfficeLocationController;
 use App\Http\Controllers\Admin\StaffDeviceController as AdminStaffDeviceController;
@@ -12,6 +17,7 @@ use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceSettingController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\CompanyOnboardingController;
 use App\Http\Controllers\PdfDevelopmentController;
 use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\StaffController;
@@ -48,6 +54,8 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.store');
 Route::match(['get', 'post'], '/staff/register/{token}', [StaffInvitationController::class, 'register'])->name('staff.register');
+Route::match(['get', 'post'], '/company/onboarding/{token}', [CompanyOnboardingController::class, 'register'])
+    ->name('company.onboarding');
 
 
 Route::get('/.well-known/assetlinks.json', function () {
@@ -78,9 +86,48 @@ Route::middleware('auth')->group(function () {
         });
 
     Route::middleware(['role:admin', 'company.active'])->group(function () {
+        Route::get('/admin/ai-analyst', [AiAnalyticsController::class, 'index'])
+            ->name('admin.ai-analyst.index');
+        Route::post('/admin/ai-analyst/company', [AiAnalyticsController::class, 'analyzeCompany'])
+            ->name('admin.ai-analyst.company');
+        Route::post('/admin/ai-analyst/staff', [AiAnalyticsController::class, 'analyzeStaff'])
+            ->name('admin.ai-analyst.staff');
+        Route::get('/admin/field-operations', [AdminFieldOperationsPageController::class, 'index'])
+            ->name('admin.field-operations.index');
+        Route::get('/admin/announcements', [AnnouncementController::class, 'index'])
+            ->name('admin.announcements.index');
+        Route::post('/admin/announcements', [AnnouncementController::class, 'store'])
+            ->name('admin.announcements.store');
+        Route::patch('/admin/announcements/{announcement}/pin', [AnnouncementController::class, 'togglePin'])
+            ->whereNumber('announcement')->name('admin.announcements.pin');
+        Route::delete('/admin/announcements/{announcement}', [AnnouncementController::class, 'destroy'])
+            ->whereNumber('announcement')->name('admin.announcements.destroy');
         Route::get('/admin/dashboard', [
             AdminDashboardController::class, 'index',
         ])->name('admin.dashboard');
+        Route::get('/admin/chat', [ChatController::class, 'index'])->name('admin.chat.index');
+        Route::post('/admin/chat/group', [ChatController::class, 'sendGroup'])->name('admin.chat.group.store');
+        Route::put('/admin/chat/group/{message}', [ChatController::class, 'updateGroup'])
+            ->whereNumber('message')->name('admin.chat.group.update');
+        Route::delete('/admin/chat/group/{message}', [ChatController::class, 'destroyGroup'])
+            ->whereNumber('message')->name('admin.chat.group.destroy');
+        Route::post('/admin/chat/private/{colleague}', [ChatController::class, 'sendPrivate'])
+            ->whereNumber('colleague')->name('admin.chat.private.store');
+        Route::get('/admin/finance', [FinancePayrollController::class, 'index'])->name('admin.finance.index');
+        Route::post('/admin/finance/payroll-mode', [FinancePayrollController::class, 'updatePayrollMode'])
+            ->name('admin.finance.payroll-mode.update');
+        Route::post('/admin/finance/budget', [FinancePayrollController::class, 'saveBudget'])
+            ->name('admin.finance.budget.store');
+        Route::put('/admin/finance/compensation/{user}', [FinancePayrollController::class, 'saveCompensation'])
+            ->whereNumber('user')->name('admin.finance.compensation.update');
+        Route::post('/admin/finance/approve', [FinancePayrollController::class, 'approve'])
+            ->name('admin.finance.approve');
+        Route::post('/admin/finance/salary-advances/{advance}/approve', [FinancePayrollController::class, 'approveAdvance'])
+            ->whereNumber('advance')->name('admin.finance.salary-advances.approve');
+        Route::post('/admin/finance/salary-advances/{advance}/reject', [FinancePayrollController::class, 'rejectAdvance'])
+            ->whereNumber('advance')->name('admin.finance.salary-advances.reject');
+        Route::get('/admin/finance/export', [FinancePayrollController::class, 'export'])
+            ->name('admin.finance.export');
         Route::get('/admin/attendance', [AttendanceReportController::class, 'index'])->name('admin.attendance.index');
         Route::post('/admin/office-location', [OfficeLocationController::class, 'store'])->name('admin.office-location.store');
 

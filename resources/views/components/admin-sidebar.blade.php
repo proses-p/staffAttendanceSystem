@@ -1,25 +1,43 @@
 
+@php
+    $unreadSalaryAdvanceCount = auth()->user()?->company_id
+        ? \App\Models\SalaryAdvanceRequest::query()
+            ->where('company_id', auth()->user()->company_id)
+            ->where('status', 'pending')
+            ->where('is_read', false)
+            ->count()
+        : 0;
+@endphp
+<div class="sticky top-0 z-30 flex w-full items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+    <div class="flex items-center gap-2">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-xs font-bold text-cyan-400">SF</span>
+        <span class="font-semibold text-slate-900">StaffFlow</span>
+    </div>
+    <button
+        type="button"
+        id="openSidebarButton"
+        aria-controls="adminSidebar"
+        aria-expanded="false"
+        aria-label="Open navigation"
+        onclick="openAdminSidebar()"
+        class="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-700"
+    >☰</button>
+</div>
+<div
+    id="sidebarOverlay"
+    onclick="closeAdminSidebar()"
+    class="fixed inset-0 z-40 hidden bg-slate-900/50 backdrop-blur-xs lg:hidden"
+    aria-hidden="true"
+></div>
 <aside
     id="adminSidebar"
-    class="w-full shrink-0 border-b border-slate-200 bg-white lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r @if (request()->routeIs('admin.dashboard')) fixed inset-y-0 left-0 z-50 h-screen w-64 -translate-x-full transition-transform duration-300 ease-out lg:static lg:inset-auto lg:z-auto lg:h-auto lg:translate-x-0 @endif"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-72 -translate-x-full transform flex-col overflow-y-auto border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out lg:static lg:h-screen lg:w-64 lg:translate-x-0 lg:shrink-0"
 >
 
     <div class="flex h-full flex-col p-5 lg:p-6">
 
-        @if (request()->routeIs('admin.dashboard'))
-            <button
-                type="button"
-                aria-controls="adminSidebar"
-                aria-label="Close navigation"
-                onclick="closeSidebar()"
-                class="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-700 shadow-sm lg:hidden"
-            >
-                <span aria-hidden="true">&times;</span>
-            </button>
-        @endif
-
-
-        <div class="flex items-center gap-3">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
 
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-cyan-400 shadow-sm">
                 <svg
@@ -47,6 +65,8 @@
                 </p>
             </div>
 
+            </div>
+            <button type="button" aria-label="Close navigation" onclick="closeAdminSidebar()" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-xl text-slate-600 lg:hidden">&times;</button>
         </div>
 
 
@@ -136,6 +156,70 @@
                         <path stroke-linecap="round" d="M7 8h10M7 12h4m-4 4h6" />
                     </svg>
                     <span>Field reimbursements</span>
+                </a>
+
+                <a
+                    href="{{ route('admin.field-operations.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.field-operations.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11Z" />
+                        <circle cx="12" cy="10" r="2.25" />
+                    </svg>
+                    <span>Field Operations</span>
+                </a>
+
+                <a
+                    href="{{ route('admin.chat.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.chat.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4.5a2.5 2.5 0 0 1-1-2V5.5Z" />
+                    </svg>
+                    <span class="flex-1">Team Chat</span>
+                    @php
+                        $sidebarUnreadChatCount = \App\Models\PrivateChatMessage::query()
+                            ->where('company_id', auth()->user()->company_id)
+                            ->where('receiver_id', auth()->id())
+                            ->where('is_read', false)
+                            ->count();
+                    @endphp
+                    @if ($sidebarUnreadChatCount > 0)
+                        <span class="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold leading-4 text-white">{{ $sidebarUnreadChatCount }}</span>
+                    @endif
+                </a>
+
+                <a
+                    href="{{ route('admin.announcements.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.announcements.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 11v2a2 2 0 0 0 2 2h2l9 5V4l-9 5H5a2 2 0 0 0-2 2Zm4 4 2 6h3l-2.5-6M18 9a4 4 0 0 1 0 6" />
+                    </svg>
+                    <span>Notice Board</span>
+                </a>
+
+                <a
+                    href="{{ route('admin.finance.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.finance.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M5 6v14h14V6M8 10h8m-8 4h8m-8 4h4M7 3h10v3H7z" />
+                    </svg>
+                    <span class="flex-1">Finance &amp; Payroll</span>
+                    @if ($unreadSalaryAdvanceCount > 0)
+                        <span class="rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-bold text-white">{{ $unreadSalaryAdvanceCount }}</span>
+                    @endif
+                </a>
+
+                <a
+                    href="{{ route('admin.ai-analyst.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium {{ request()->routeIs('admin.ai-analyst.*') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950' }}"
+                >
+                    <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2m0 14v2M5.64 5.64l1.42 1.42m9.88 9.88 1.42 1.42M3 12h2m14 0h2M5.64 18.36l1.42-1.42m9.88-9.88 1.42-1.42M8 12a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" />
+                    </svg>
+                    <span>AI Data Analyst</span>
                 </a>
 
                 @if (auth()->user()?->role === 'admin')
@@ -440,6 +524,43 @@
 
     </aside>
 
+    <script>
+        function openAdminSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const button = document.getElementById('openSidebarButton');
+            if (!sidebar || !overlay) return;
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+            button?.setAttribute('aria-expanded', 'true');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeAdminSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const button = document.getElementById('openSidebarButton');
+            if (!sidebar || !overlay) return;
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+            button?.setAttribute('aria-expanded', 'false');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('#adminSidebar nav a').forEach((link) => {
+                link.addEventListener('click', () => {
+                    if (window.matchMedia('(max-width: 1023px)').matches) {
+                        closeAdminSidebar();
+                        window.scrollTo({ top: 0, behavior: 'auto' });
+                    }
+                });
+            });
+        });
+    </script>
+
 
     <!-- =====================================================
         ATTENDANCE REPORT MODAL
@@ -447,14 +568,14 @@
 
     <div
         id="attendanceReportModal"
-        class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm sm:px-6"
+        class="fixed inset-0 z-[100] hidden items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm"
     >
 
         <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="attendanceReportTitle"
-            class="w-full max-w-lg overflow-hidden rounded-3xl border border-white/70 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.2)]"
+            class="relative my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/70 bg-white p-0 shadow-2xl"
         >
 
             <!-- Modal Header -->

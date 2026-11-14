@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
 
-<body class="min-h-screen bg-slate-50 p-4 text-slate-900 sm:p-6 lg:p-10">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 p-4 text-slate-900 sm:p-6 lg:p-8">
     <main class="mx-auto max-w-4xl">
         <header class="mb-8 flex flex-col gap-4 border-b border-slate-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
             <div>

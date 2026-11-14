@@ -124,9 +124,14 @@ class FieldExpenseReviewController extends Controller
         $this->ensureCompanyScope($request->user(), $expense);
         abort_unless($expense->receipt_image_path, 404);
         $disk = Storage::disk(FieldExpense::RECEIPT_DISK);
-        abort_unless($disk->exists($expense->receipt_image_path), 404);
+        if ($disk->exists($expense->receipt_image_path)) {
+            return $disk->response($expense->receipt_image_path);
+        }
 
-        return $disk->response($expense->receipt_image_path);
+        $publicDisk = Storage::disk('public');
+        abort_unless($publicDisk->exists($expense->receipt_image_path), 404);
+
+        return $publicDisk->response($expense->receipt_image_path);
     }
 
     private function ensureCompanyScope(User $reviewer, FieldExpense $expense): void

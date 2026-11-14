@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ asset('css/staffflow.css') }}">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900">
+<body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
     <div class="min-h-screen flex flex-col lg:flex-row">
         @include('components.admin-sidebar')
 
-        <main class="flex-1 p-4 pt-8 sm:p-6 lg:p-10">
+        <main class="min-w-0 flex-1 scroll-mt-0 p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <header class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -98,8 +98,8 @@
                                     @else
                                         <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                             @foreach ($submission->photos as $photo)
-                                                <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($photo->photo_path) }}" target="_blank" rel="noopener noreferrer" class="overflow-hidden rounded-lg border border-slate-200">
-                                                    <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($photo->photo_path) }}" alt="Daily work photo" class="h-28 w-full object-cover transition hover:scale-105">
+                                                <a href="{{ $photo->url }}" target="_blank" rel="noopener noreferrer" class="overflow-hidden rounded-lg border border-slate-200">
+                                                    <img src="{{ $photo->url }}" alt="Daily work photo" class="h-28 w-full object-cover transition hover:scale-105">
                                                 </a>
                                             @endforeach
                                         </div>
@@ -130,8 +130,8 @@
         </main>
     </div>
 
-    <div id="assignTaskModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/60 p-4" onclick="if(event.target===this)this.classList.add('hidden')">
-        <section role="dialog" aria-modal="true" aria-labelledby="assignTaskTitle" class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+    <div id="assignTaskModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-xs" onclick="if(event.target===this)this.classList.add('hidden')">
+        <section role="dialog" aria-modal="true" aria-labelledby="assignTaskTitle" class="relative my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
             <div class="mb-5 flex items-center justify-between">
                 <h2 id="assignTaskTitle" class="text-xl font-semibold text-slate-950">Assign New Task</h2>
                 <button type="button" aria-label="Close" onclick="document.getElementById('assignTaskModal').classList.add('hidden')" class="rounded-lg px-3 py-1 text-xl text-slate-500 hover:bg-slate-100">&times;</button>
