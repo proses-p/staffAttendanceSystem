@@ -10,7 +10,6 @@ use App\Models\MonthlyPayrollRecord;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use JsonException;
 use RuntimeException;
@@ -282,7 +281,7 @@ PROMPT;
         if ($apiKey === '') {
             throw new RuntimeException('Gemini is not configured. Set GEMINI_API_KEY to enable AI analysis.');
         }
-        $model = (string) config('services.gemini.model', 'gemini-3.8-flash');
+        $model = (string) config('services.gemini.model', 'gemini-2.0-flash');
         try {
             $contextJson = json_encode(
                 $context,
@@ -296,16 +295,22 @@ PROMPT;
         }
         $message = $request."\n\nVerified JSON dataset (source of truth):\n".$contextJson;
 
-        try {
-            $sendRequest = function (string $requestModel) use ($apiKey, $message) {
-                $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-                    .rawurlencode($requestModel)
-                    .':generateContent';
+        $models = array_values(array_unique(array_merge(
+            [$model],
+            ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
+        )));
+        $lastError = 'All configured Gemini models failed.';
+        $lastConnectionException = null;
 
-                return Http::acceptJson()
-                    ->withHeaders(['x-goog-api-key' => $apiKey])
+        foreach ($models as $requestModel) {
+            $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
+                .rawurlencode($requestModel)
+                .':generateContent?key='.rawurlencode($apiKey);
+
+            try {
+                $response = Http::acceptJson()
                     ->connectTimeout(10)
-                    ->timeout(30)
+                    ->timeout(45)
                     ->post($url, [
                         'systemInstruction' => [
                             'parts' => [['text' => self::SYSTEM_INSTRUCTION]],
@@ -319,61 +324,41 @@ PROMPT;
                             'maxOutputTokens' => 4096,
                         ],
                     ]);
-            };
-            $response = $sendRequest($model);
-            if ($this->isTransientOverload($response)) {
-                usleep(500000);
-                $response = $sendRequest($model);
-
-                if ($this->isTransientOverload($response)) {
-                    foreach (['gemini-4-hydrogen', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite'] as $fallbackModel) {
-                        if ($fallbackModel === $model) {
-                            continue;
-                        }
-
-                        $response = $sendRequest($fallbackModel);
-                        if (! $this->isTransientOverload($response)) {
-                            break;
-                        }
-                    }
-                }
+            } catch (ConnectionException $exception) {
+                $lastError = 'Gemini could not be reached. Please try the analysis again.';
+                $lastConnectionException = $exception;
+                continue;
             }
-        } catch (ConnectionException $exception) {
-            throw new RuntimeException(
-                'Gemini could not be reached. Please try the analysis again.',
-                previous: $exception
-            );
-        }
 
-        if (! $response->successful()) {
-            $providerMessage = $response->json('error.message');
-            throw new RuntimeException(
-                is_string($providerMessage) && $providerMessage !== ''
+            if (! $response->successful()) {
+                $providerMessage = $response->json('error.message');
+                $lastError = is_string($providerMessage) && $providerMessage !== ''
                     ? 'Gemini analysis failed: '.$providerMessage
-                    : 'Gemini analysis failed with HTTP '.$response->status().'.'
-            );
+                    : 'Gemini analysis failed with HTTP '.$response->status().'.';
+                $lastConnectionException = null;
+                continue;
+            }
+
+            $data = $response->json();
+            $candidate = is_array($data) ? ($data['candidates'][0] ?? null) : null;
+            $content = is_array($candidate) ? ($candidate['content'] ?? null) : null;
+            $parts = is_array($content) ? ($content['parts'] ?? []) : [];
+            $answer = collect(is_array($parts) ? $parts : [])
+                ->pluck('text')
+                ->filter(fn (mixed $text): bool => is_string($text) && trim($text) !== '')
+                ->implode("\n");
+
+            if (trim($answer) === '') {
+                $lastError = 'Gemini returned no analysis text. Please try again.';
+                $lastConnectionException = null;
+                continue;
+            }
+
+            $answer = trim($answer);
+            return preg_replace('/^([ \t]*)\*[ \t]+/m', '$1- ', $answer) ?? $answer;
         }
-        $parts = $response->json('candidates.0.content.parts', []);
-        $answer = collect(is_array($parts) ? $parts : [])
-            ->pluck('text')
-            ->filter(fn (mixed $text): bool => is_string($text) && trim($text) !== '')
-            ->implode("\n");
-        if (trim($answer) === '') {
-            throw new RuntimeException('Gemini returned no analysis text. Please try again.');
-        }
 
-        $answer = trim($answer);
-        $this->ensureStructuredResponse($answer);
-
-        return $answer;
-    }
-
-    private function isTransientOverload(Response $response): bool
-    {
-        $providerMessage = $response->json('error.message');
-
-        return in_array($response->status(), [429, 503], true)
-            || (is_string($providerMessage) && str_contains(strtolower($providerMessage), 'high demand'));
+        throw new RuntimeException($lastError, previous: $lastConnectionException);
     }
 
     private function period(string $month): array
@@ -402,54 +387,4 @@ PROMPT;
             ."- Confirm that attendance or daily work submission records are available for this period.";
     }
 
-    private function ensureStructuredResponse(string $answer): void
-    {
-        $headings = [
-            '### Executive Summary',
-            '### Key Metrics & Findings',
-            '### Work & Operational Insights',
-            '### Actionable Hints',
-        ];
-        $positions = array_map(
-            static fn (string $heading): int|false => strpos($answer, $heading),
-            $headings
-        );
-        if (in_array(false, $positions, true)) {
-            throw new RuntimeException('Gemini returned an analysis without the required section headings. Please retry.');
-        }
-
-        foreach ($headings as $heading) {
-            if (substr_count($answer, $heading) !== 1) {
-                throw new RuntimeException('Gemini returned an analysis with repeated section headings. Please retry.');
-            }
-        }
-        for ($index = 1; $index < count($positions); $index++) {
-            if ($positions[$index] <= $positions[$index - 1]) {
-                throw new RuntimeException('Gemini returned an analysis with incorrectly ordered sections. Please retry.');
-            }
-        }
-        $summaryStart = $positions[0] + strlen($headings[0]);
-        $summary = trim(substr($answer, $summaryStart, $positions[1] - $summaryStart));
-        $summarySentences = preg_match_all('/(?<!\d)[.!?](?=\s|$)/u', $summary);
-        if (strlen($summary) > 500 || $summarySentences < 1 || $summarySentences > 2) {
-            throw new RuntimeException('Gemini returned an executive summary outside the required length. Please retry.');
-        }
-        foreach (array_slice($positions, 1) as $index => $position) {
-            $sectionStart = $position + strlen($headings[$index + 1]);
-            $sectionEnd = $positions[$index + 2] ?? strlen($answer);
-            $section = substr($answer, $sectionStart, $sectionEnd - $sectionStart);
-            if (! preg_match('/^\s*-\s+/m', $section)) {
-                throw new RuntimeException('Gemini returned an analysis without the required bullet formatting. Please retry.');
-            }
-            if ($index === 0 && preg_match('/^\s*-\s+(?!\*\*)/m', $section)) {
-                throw new RuntimeException('Gemini returned key metrics without bold labels. Please retry.');
-            }
-        }
-        $actionStart = $positions[3] + strlen($headings[3]);
-        $actionSection = substr($answer, $actionStart);
-        $actionBullets = preg_match_all('/^\s*-\s+/m', $actionSection);
-        if ($actionBullets < 2 || $actionBullets > 3) {
-            throw new RuntimeException('Gemini returned an analysis with an invalid Actionable Hints list. Please retry.');
-        }
-    }
 }

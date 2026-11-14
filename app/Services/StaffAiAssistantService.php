@@ -12,7 +12,6 @@ use App\Models\StaffLeaveRecord;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use JsonException;
 use RuntimeException;
@@ -273,7 +272,6 @@ PROMPT;
             "Answer the staff_message using only verified_employee_context:\n".$input,
             2048
         ));
-        $this->validateStructuredReply($reply);
 
         return $reply;
     }
@@ -284,18 +282,23 @@ PROMPT;
         if ($apiKey === '') {
             throw new RuntimeException('AI Assistant is not configured. Please contact your administrator.');
         }
-        $model = (string) config('services.gemini.model', 'gemini-3.8-flash');
+        $model = (string) config('services.gemini.model', 'gemini-2.0-flash');
+        $models = array_values(array_unique(array_merge(
+            [$model],
+            ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
+        )));
+        $lastError = 'All configured Gemini models failed.';
+        $lastConnectionException = null;
 
-        try {
-            $sendRequest = function (string $requestModel) use ($apiKey, $systemInstruction, $prompt, $maxOutputTokens) {
-                $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-                    .rawurlencode($requestModel)
-                    .':generateContent';
+        foreach ($models as $requestModel) {
+            $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
+                .rawurlencode($requestModel)
+                .':generateContent?key='.rawurlencode($apiKey);
 
-                return Http::acceptJson()
-                    ->withHeaders(['x-goog-api-key' => $apiKey])
+            try {
+                $response = Http::acceptJson()
                     ->connectTimeout(10)
-                    ->timeout(30)
+                    ->timeout(45)
                     ->post($url, [
                         'systemInstruction' => [
                             'parts' => [['text' => $systemInstruction]],
@@ -309,90 +312,38 @@ PROMPT;
                             'maxOutputTokens' => $maxOutputTokens,
                         ],
                     ]);
-            };
-            $response = $sendRequest($model);
-            if ($this->isTransientOverload($response)) {
-                usleep(500000);
-                $response = $sendRequest($model);
-
-                if ($this->isTransientOverload($response)) {
-                    foreach (['gemini-4-hydrogen', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite'] as $fallbackModel) {
-                        if ($fallbackModel === $model) {
-                            continue;
-                        }
-
-                        $response = $sendRequest($fallbackModel);
-                        if (! $this->isTransientOverload($response)) {
-                            break;
-                        }
-                    }
-                }
+            } catch (ConnectionException $exception) {
+                $lastError = 'AI Assistant could not be reached. Please try again.';
+                $lastConnectionException = $exception;
+                continue;
             }
-        } catch (ConnectionException $exception) {
-            throw new RuntimeException(
-                'AI Assistant could not be reached. Please try again.',
-                previous: $exception
-            );
-        }
-        if (! $response->successful()) {
-            throw new RuntimeException('AI Assistant request failed. Please try again later.');
-        }
-        $parts = $response->json('candidates.0.content.parts', []);
-        $answer = collect(is_array($parts) ? $parts : [])
-            ->pluck('text')
-            ->filter(fn (mixed $text): bool => is_string($text) && trim($text) !== '')
-            ->implode("\n");
-        if (trim($answer) === '') {
-            throw new RuntimeException('AI Assistant returned an empty response. Please try again.');
-        }
 
-        return trim($answer);
-    }
-
-    private function isTransientOverload(Response $response): bool
-    {
-        $providerMessage = $response->json('error.message');
-
-        return in_array($response->status(), [429, 503], true)
-            || (is_string($providerMessage) && str_contains(strtolower($providerMessage), 'high demand'));
-    }
-
-    private function validateStructuredReply(string $reply): void
-    {
-        $headings = [
-            '### Executive Summary',
-            '### Key Metrics & Findings',
-            '### Work & Operational Insights',
-            '### Actionable Hints',
-        ];
-        $positions = array_map(fn (string $heading): int|false => strpos($reply, $heading), $headings);
-        if (in_array(false, $positions, true)) {
-            throw new RuntimeException('AI Assistant returned an unformatted response. Please try again.');
-        }
-        foreach ($headings as $heading) {
-            if (substr_count($reply, $heading) !== 1) {
-                throw new RuntimeException('AI Assistant returned a response with invalid section headings. Please try again.');
+            if (! $response->successful()) {
+                $lastError = 'AI Assistant request failed. Please try again later.';
+                $lastConnectionException = null;
+                continue;
             }
-        }
-        for ($index = 1; $index < count($positions); $index++) {
-            if ($positions[$index] <= $positions[$index - 1]) {
-                throw new RuntimeException('AI Assistant returned sections in the wrong order. Please try again.');
+
+            $data = $response->json();
+            $candidate = is_array($data) ? ($data['candidates'][0] ?? null) : null;
+            $content = is_array($candidate) ? ($candidate['content'] ?? null) : null;
+            $parts = is_array($content) ? ($content['parts'] ?? []) : [];
+            $answer = collect(is_array($parts) ? $parts : [])
+                ->pluck('text')
+                ->filter(fn (mixed $text): bool => is_string($text) && trim($text) !== '')
+                ->implode("\n");
+
+            if (trim($answer) === '') {
+                $lastError = 'AI Assistant returned an empty response. Please try again.';
+                $lastConnectionException = null;
+                continue;
             }
+
+            $answer = trim($answer);
+            return preg_replace('/^([ \t]*)\*[ \t]+/m', '$1- ', $answer) ?? $answer;
         }
-        $metricsStart = $positions[1] + strlen($headings[1]);
-        $metrics = substr($reply, $metricsStart, $positions[2] - $metricsStart);
-        if (preg_match('/^\s*-\s+(?!\*\*)/m', $metrics)) {
-            throw new RuntimeException('AI Assistant returned key metrics without bold labels. Please try again.');
-        }
-        $actionStart = $positions[3] + strlen($headings[3]);
-        $actionSection = substr($reply, $actionStart);
-        $actionBullets = preg_match_all('/^\s*-\s+/m', $actionSection);
-        if ($actionBullets < 2 || $actionBullets > 3) {
-            throw new RuntimeException('AI Assistant returned invalid actionable hints. Please try again.');
-        }
-        if (preg_match('/^\s*-\s+(?!.*\*\*)/m', $actionSection)) {
-            throw new RuntimeException('AI Assistant returned actionable hints without bold emphasis. Please try again.');
-        }
+
+        throw new RuntimeException($lastError, previous: $lastConnectionException);
     }
 
     private function insufficientDataReply(): string
