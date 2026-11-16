@@ -65,6 +65,13 @@
 
             @endif
 
+            @if(session('status'))
+                <div class="mb-5 rounded-lg bg-green-50 border border-green-200
+                            px-4 py-3 text-sm text-green-700">
+                    {{ session('status') }}
+                </div>
+            @endif
+
 
             <!-- Login Form -->
             <form

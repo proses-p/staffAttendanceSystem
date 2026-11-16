@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\StaffInvitation;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -73,10 +72,9 @@ class CompanyOnboardingController extends Controller
                 return $user;
             });
 
-            Auth::login($user);
-            $request->session()->regenerate();
-
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('login')
+                ->with('status', 'Registration successful! Please log in with your credentials.')
+                ->withInput(['email' => $user->email]);
         }
 
         return view('auth.company-onboarding', compact('invitation'));
