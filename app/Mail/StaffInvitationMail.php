@@ -7,7 +7,7 @@ use Illuminate\Mail\Mailable;
 
 class StaffInvitationMail extends Mailable
 {
-    private const ADMIN_ONBOARDING_URL_BASE = 'https://wadudu.co.tz';
+    private const ADMIN_ONBOARDING_URL_BASE = 'https://app.taarifa.wadudu.co.tz';
 
     private const STAFF_REGISTRATION_URL_BASE = 'https://app.taarifa.wadudu.co.tz';
 
