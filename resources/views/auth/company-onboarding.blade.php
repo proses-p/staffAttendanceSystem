@@ -57,17 +57,52 @@
 
                 <div>
                     <label for="password" class="mb-2 block text-sm font-medium text-slate-700">Password</label>
-                    <input id="password" type="password" name="password" minlength="8" autocomplete="new-password" required class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                    <div class="relative">
+                        <input id="password" type="password" name="password" minlength="8" autocomplete="new-password" required class="w-full rounded-xl border border-slate-200 px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                        <button type="button" data-password-toggle="password" aria-label="Show password" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-700">
+                            <svg data-eye class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-6.75 9.75-6.75S21.75 12 21.75 12s-3.5 6.75-9.75 6.75S2.25 12 2.25 12Z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <svg data-eye-slash class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m3 3 18 18M10.58 10.59a2 2 0 0 0 2.83 2.83M9.88 5.09A10.7 10.7 0 0 1 12 4.88c6.25 0 9.75 7.12 9.75 7.12a16.7 16.7 0 0 1-3.03 3.93M6.18 6.18C3.68 7.88 2.25 12 2.25 12s3.5 7.12 9.75 7.12a10.7 10.7 0 0 0 4.12-.82" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div>
                     <label for="password_confirmation" class="mb-2 block text-sm font-medium text-slate-700">Confirm Password</label>
-                    <input id="password_confirmation" type="password" name="password_confirmation" minlength="8" autocomplete="new-password" required class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                    <div class="relative">
+                        <input id="password_confirmation" type="password" name="password_confirmation" minlength="8" autocomplete="new-password" required class="w-full rounded-xl border border-slate-200 px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100">
+                        <button type="button" data-password-toggle="password_confirmation" aria-label="Show password" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-700">
+                            <svg data-eye class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.5-6.75 9.75-6.75S21.75 12 21.75 12s-3.5 6.75-9.75 6.75S2.25 12 2.25 12Z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <svg data-eye-slash class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m3 3 18 18M10.58 10.59a2 2 0 0 0 2.83 2.83M9.88 5.09A10.7 10.7 0 0 1 12 4.88c6.25 0 9.75 7.12 9.75 7.12a16.7 16.7 0 0 1-3.03 3.93M6.18 6.18C3.68 7.88 2.25 12 2.25 12s3.5 7.12 9.75 7.12a10.7 10.7 0 0 0 4.12-.82" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="brand-button w-full rounded-xl px-4 py-3 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">Create admin account</button>
             </form>
         </section>
     </main>
+    <script>
+        document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const input = document.getElementById(button.dataset.passwordToggle);
+                const isVisible = input.type === 'text';
+
+                input.type = isVisible ? 'password' : 'text';
+                button.querySelector('[data-eye]').classList.toggle('hidden', !isVisible);
+                button.querySelector('[data-eye-slash]').classList.toggle('hidden', isVisible);
+                button.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+            });
+        });
+    </script>
 </body>
 </html>
